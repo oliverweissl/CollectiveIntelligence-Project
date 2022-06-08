@@ -10,17 +10,17 @@ from vi.config import Config, dataclass, deserialize
 @deserialize
 @dataclass
 class FlockingConfig(Config):
-    alignment_weight: float = 0.7
-    cohesion_weight: float = 0.55
-    separation_weight: float = 0.5
-    random_weigth: float = 0.01
+    alignment_weight: float = 0.4
+    cohesion_weight: float = 0.3
+    separation_weight: float = 0.3
+    random_weigth: float = 0.1
 
     delta_time: float = 3
 
     mass: int = 20
 
-    def weights(self) -> tuple[float, float, float]:
-        return (self.alignment_weight, self.cohesion_weight, self.separation_weight)
+    def weights(self) -> tuple[float, float, float ,float]:
+        return (self.alignment_weight, self.cohesion_weight, self.separation_weight, self.random_weigth)
 
 
 class Bird(Agent):
@@ -35,7 +35,7 @@ class Bird(Agent):
         if len(n) > 0: #if we have n
             pos = [s[0].pos for s in n] #positions of n
 
-            c = (np.average(pos,axis = 0) -self.pos) - self.move #fc - vel --> coheison
+            c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
             a = np.average([s[0].move for s in n], axis = 0) - self.move #alignment
 
@@ -45,11 +45,9 @@ class Bird(Agent):
                        self.config.random_weigth * np.random.random((2))) / self.config.mass
 
             self.move += f_total  # update move angle and velocity
-            self.move = self.move / np.linalg.norm(self.move) if self.move[1] < self.config.movement_speed else self.move
 
+        self.move = self.move / np.linalg.norm(self.move) if self.move[1] < self.config.movement_speed else self.move
         self.pos += self.move * self.config.delta_time #update pos
-
-
 
 
         #END CODE -----------------
@@ -59,6 +57,7 @@ class Selection(Enum):
     ALIGNMENT = auto()
     COHESION = auto()
     SEPARATION = auto()
+    RANDOM = auto()
 
 
 class FlockingLive(Simulation):
@@ -72,6 +71,8 @@ class FlockingLive(Simulation):
             self.config.cohesion_weight += by
         elif self.selection == Selection.SEPARATION:
             self.config.separation_weight += by
+        elif self.selection == Selection.RANDOM:
+            self.config.random_weigth += by
 
     def before_update(self):
         super().before_update()
@@ -88,9 +89,11 @@ class FlockingLive(Simulation):
                     self.selection = Selection.COHESION
                 elif event.key == pg.K_3:
                     self.selection = Selection.SEPARATION
+                elif event.key == pg.K_4:
+                    self.selection = Selection.RANDOM
 
-        a, c, s = self.config.weights()
-        print(f"A: {a:.1f} - C: {c:.1f} - S: {s:.1f}")
+        a, c, s, w = self.config.weights()
+        print(f"A: {a:.2f} - C: {c:.2f} - S: {s:.2f} - W: {w:.2f}")
 
 
 (
