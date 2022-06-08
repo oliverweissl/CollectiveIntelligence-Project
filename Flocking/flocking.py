@@ -27,24 +27,21 @@ class Bird(Agent):
     config: FlockingConfig
 
     def change_position(self):
-
         # Pac-man-style teleport to the other end of the screen when trying to escape
         self.there_is_no_escape()
 
         #YOUR CODE HERE -----------
-
-
         n = list(self.in_proximity_accuracy()) #list of neighbors
         if len(n) > 0: #if we have n
             pos = [s[0].pos for s in n] #positions of n
 
-            coheison = (np.average(pos,axis = 0) -self.pos) - self.move #fc - vel
-            seperation = np.average([self.pos - x for x in pos], axis = 0)
-            alignment = np.average([s[0].move for s in n], axis = 0) - self.move
+            c = (np.average(pos,axis = 0) -self.pos) - self.move #fc - vel --> coheison
+            s = np.average([self.pos - x for x in pos], axis = 0) #seperation
+            a = np.average([s[0].move for s in n], axis = 0) - self.move #alignment
 
-            f_total = (self.config.alignment_weight * alignment +
-                       self.config.separation_weight * seperation +
-                       self.config.cohesion_weight * coheison +
+            f_total = (self.config.alignment_weight * a +
+                       self.config.separation_weight * s +
+                       self.config.cohesion_weight * c +
                        self.config.random_weigth * np.random.random((2))) / self.config.mass
 
             self.move += f_total  # update move angle and velocity
