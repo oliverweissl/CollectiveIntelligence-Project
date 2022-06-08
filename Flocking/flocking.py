@@ -10,10 +10,10 @@ from vi.config import Config, dataclass, deserialize
 @deserialize
 @dataclass
 class FlockingConfig(Config):
-    alignment_weight: float = 1
-    cohesion_weight: float = 0.5
+    alignment_weight: float = 0.7
+    cohesion_weight: float = 0.55
     separation_weight: float = 0.5
-    random_weigth: float = 0.05
+    random_weigth: float = 0.01
 
     delta_time: float = 3
 
@@ -36,27 +36,21 @@ class Bird(Agent):
 
         n = list(self.in_proximity_accuracy()) #list of neighbors
         if len(n) > 0: #if we have n
-            avg_vel = np.average([s[0].move for s in n],axis = 0) #get avg speed of n
             pos = [s[0].pos for s in n] #positions of n
 
-            avg_pos = np.average(pos,axis = 0) #average pos of n
-            fc = avg_pos-self.pos
-
-            coheison = fc - self.move
+            coheison = (np.average(pos,axis = 0) -self.pos) - self.move #fc - vel
             seperation = np.average([self.pos - x for x in pos], axis = 0)
-            alignment = avg_vel - self.move
+            alignment = np.average([s[0].move for s in n], axis = 0) - self.move
 
-            rand_steering = np.random.random((2))
             f_total = (self.config.alignment_weight * alignment +
                        self.config.separation_weight * seperation +
                        self.config.cohesion_weight * coheison +
-                       self.config.random_weigth * rand_steering) / self.config.mass
+                       self.config.random_weigth * np.random.random((2))) / self.config.mass
 
             self.move += f_total  # update move angle and velocity
-            if self.move[1] < self.config.movement_speed:
-                self.move = self.move / np.linalg.norm(self.move)
+            self.move = self.move / np.linalg.norm(self.move) if self.move[1] < self.config.movement_speed else self.move
 
-        self.pos = self.pos + self.move * self.config.delta_time #update pos
+        self.pos += self.move * self.config.delta_time #update pos
 
 
 
