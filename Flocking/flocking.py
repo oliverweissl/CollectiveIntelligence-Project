@@ -28,25 +28,24 @@ class Bird(Agent):
     def change_position(self):
         # Pac-man-style teleport to the other end of the screen when trying to escape
         self.there_is_no_escape()
+
         #YOUR CODE HERE -----------
-        n = list(self.in_proximity_accuracy())
-        if amt := len(n) > 0:
-            speeds = [s[0].move[1] for s in n]
-            avg_speed = (1/amt)*sum(speeds)
-            pos = [s[0].pos for s in n]
+        n = list(self.in_proximity_accuracy()) #list of neighbors
+        if amt := len(n) > 0: #if we have n
+            avg_speeds = np.average([s[0].move[1] for s in n]) #get avg speed of n
+            pos = [s[0].pos for s in n] #positions of n
 
-            avg_pos = np.average(pos,axis = 0)
+            avg_pos = np.average(pos,axis = 0) #average pos of n
             fc = avg_pos-self.pos
-
 
             coheison = fc - self.move[1]
             seperation = np.average([self.pos - x for x in pos],axis = 0)
             alignment = avg_speed-self.move[1]
 
             f_total = (alignment+seperation+coheison)
-            self.move += f_total
+            self.move += f_total #update move angle and velocity
 
-        self.pos = self.pos + self.move
+        self.pos = self.pos + self.move #update pos
 
 
 
