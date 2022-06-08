@@ -13,14 +13,14 @@ class FlockingConfig(Config):
     alignment_weight: float = 0.4
     cohesion_weight: float = 0.3
     separation_weight: float = 0.3
-    random_weigth: float = 0.1
+    random_weight: float = 0.1
 
     delta_time: float = 3
 
     mass: int = 20
 
-    def weights(self) -> tuple[float, float, float ,float]:
-        return (self.alignment_weight, self.cohesion_weight, self.separation_weight, self.random_weigth)
+    def weights(self) -> tuple[float, float, float, float]:
+        return (self.alignment_weight, self.cohesion_weight, self.separation_weight, self.random_weight)
 
 
 class Bird(Agent):
@@ -42,11 +42,18 @@ class Bird(Agent):
             f_total = (self.config.alignment_weight * a +
                        self.config.separation_weight * s +
                        self.config.cohesion_weight * c +
-                       self.config.random_weigth * np.random.random((2))) / self.config.mass
+                       self.config.random_weight * np.random.random((2))) / self.config.mass
 
             self.move += f_total  # update move angle and velocity
 
-        self.move = self.move / np.linalg.norm(self.move) if self.move[1] < self.config.movement_speed else self.move
+        coll = list(self.obstacle_intersections(scale = 2))
+        if len(coll) > 0:
+            for c in coll:
+                nm = self.move-(c-self.pos) #current move velocity - distance to the obstacle
+                self.move = nm / np.linalg.norm(nm) #normalize vector
+
+        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) < self.config.movement_speed else self.move
+        self.move = pg.Vector2((self.move[0],self.move[1]))
         self.pos += self.move * self.config.delta_time #update pos
 
 
@@ -96,6 +103,7 @@ class FlockingLive(Simulation):
         print(f"A: {a:.2f} - C: {c:.2f} - S: {s:.2f} - W: {w:.2f}")
 
 
+x, y = FlockingConfig().window.as_tuple()
 (
     FlockingLive(
         FlockingConfig(
@@ -105,6 +113,7 @@ class FlockingLive(Simulation):
             seed=1,
         )
     )
+    .spawn_obstacle("images/bubble-full.png", x // 2, y // 2)
     .batch_spawn_agents(50, Bird, images=["images/bird.png"])
     .run()
 )
