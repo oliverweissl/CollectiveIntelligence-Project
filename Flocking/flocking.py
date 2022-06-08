@@ -26,12 +26,16 @@ class Bird(Agent):
     config: FlockingConfig
 
     def change_position(self):
+        alpha = 0.7
+        beta = 0.2
+        gamma = 0.5
+        omega = 0.05
         # Pac-man-style teleport to the other end of the screen when trying to escape
         self.there_is_no_escape()
 
         #YOUR CODE HERE -----------
         n = list(self.in_proximity_accuracy()) #list of neighbors
-        if amt := len(n) > 0: #if we have n
+        if len(n) > 0: #if we have n
             avg_speed = np.average([s[0].move[1] for s in n]) #get avg speed of n
             pos = [s[0].pos for s in n] #positions of n
 
@@ -42,9 +46,13 @@ class Bird(Agent):
             seperation = np.average([self.pos - x for x in pos], axis = 0)
             alignment = avg_speed-self.move[1]
 
-            f_total = (alignment+seperation+coheison)/self.config.mass
+            rand_steering = np.random.random((2))
+            f_total = (alpha*alignment + beta*seperation + gamma*coheison + omega*rand_steering)/self.config.mass
 
-            self.move += f_total #update move angle and velocity
+            self.move += f_total  # update move angle and velocity
+            if self.move[1] < self.config.movement_speed:
+                self.move = self.move / np.linalg.norm(self.move)
+
 
         self.pos = self.pos + self.move #update pos
 
