@@ -7,14 +7,13 @@ from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
 
 
-
 @deserialize
 @dataclass
 class FlockingConfig(Config):
     alignment_weight: float = 0.75
     cohesion_weight: float = 0.4
     separation_weight: float = 0.4
-    random_weight: float = 0.7
+    random_weight: float = 0.5
 
     delta_time: float = 3
 
@@ -35,17 +34,24 @@ class Bird(Agent):
         n = list(self.in_proximity_accuracy()) #list of neighbors
         if len(n) > 0: #if we have n
             pos = [s[0].pos for s in n] #positions of n
+            vec = [s[0].move for s in n]
+
+            if np.arccos(np.dot(np.average(vec,axis = 0), self.move))< 0.5:
+                self.change_image(1)
+            else: self.change_image(0)
 
             c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
-            a = np.average([s[0].move for s in n], axis = 0) - self.move #alignment
+            a = np.average(vec, axis = 0) - self.move #alignment
+
 
             f_total = (self.config.alignment_weight * a +
                        self.config.separation_weight * s +
                        self.config.cohesion_weight * c +
-                       self.config.random_weight * np.random.normal(size = 2)) / self.config.mass
+                       self.config.random_weight * np.random.uniform(low = -0.5, high = 0.5, size = 2)) / self.config.mass
 
             self.move += f_total  # update move angle and velocity
+        else: self.change_image(0)
 
         coll = list(self.obstacle_intersections(scale = 2))
         if len(coll) > 0:
@@ -103,9 +109,10 @@ class FlockingLive(Simulation):
 
 
 x, y = FlockingConfig().window.as_tuple()
-(
+df = (
     FlockingLive(
         FlockingConfig(
+            duration=10*60,
             image_rotation=True,
             movement_speed=1,
             radius=50,
@@ -113,6 +120,10 @@ x, y = FlockingConfig().window.as_tuple()
         )
     )
     .spawn_obstacle("images/bubble-full.png", x // 2, y // 2)
-    .batch_spawn_agents(50, Bird, images=["images/bird.png"])
+    .batch_spawn_agents(50, Bird, images=["images/bird.png","images/bird_red.png"])
     .run()
 )
+
+
+dfs= df.snapshots
+dfs.write_csv(f"A{FlockingConfig.alignment_weight:.2f}_C{FlockingConfig.cohesion_weight:.2f}_S{FlockingConfig.separation_weight:.2f}_W{FlockingConfig.random_weight:.2f}.csv")
