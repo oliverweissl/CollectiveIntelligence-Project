@@ -10,8 +10,8 @@ from vi.config import Config, dataclass, deserialize
 @deserialize
 @dataclass
 class FlockingConfig(Config):
-    alignment_weight: float = 0.75
-    cohesion_weight: float = 0.4
+    alignment_weight: float = 0.80
+    cohesion_weight: float = 0.5
     separation_weight: float = 0.4
     random_weight: float = 0.5
 
@@ -126,4 +126,4 @@ df = (
 
 
 dfs= df.snapshots
-dfs.write_csv(f"A{FlockingConfig.alignment_weight:.2f}_C{FlockingConfig.cohesion_weight:.2f}_S{FlockingConfig.separation_weight:.2f}_W{FlockingConfig.random_weight:.2f}.csv")
+dfs.write_csv(f"Experiments/A{FlockingConfig.alignment_weight:.2f}_C{FlockingConfig.cohesion_weight:.2f}_S{FlockingConfig.separation_weight:.2f}_W{FlockingConfig.random_weight:.2f}.csv")
