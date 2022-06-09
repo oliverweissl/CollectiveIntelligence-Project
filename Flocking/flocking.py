@@ -10,13 +10,12 @@ from vi.config import Config, dataclass, deserialize
 @deserialize
 @dataclass
 class FlockingConfig(Config):
-    alignment_weight: float = 0.75
+    alignment_weight: float = 0.85
     cohesion_weight: float = 0.4
     separation_weight: float = 0.4
     random_weight: float = 0.5
 
-    delta_time: float = 3
-
+    delta_time: float = 2
     mass: int = 20
 
     def weights(self) -> tuple[float, float, float, float]:
@@ -36,7 +35,7 @@ class Bird(Agent):
             pos = [s[0].pos for s in n] #positions of n
             vec = [s[0].move for s in n]
 
-            if np.arccos(np.dot(np.average(vec,axis = 0), self.move))< 0.5:
+            if np.arccos(np.dot(np.average(vec,axis = 0), self.move)) < 0.5:
                 self.change_image(1)
             else: self.change_image(0)
 
@@ -112,7 +111,7 @@ x, y = FlockingConfig().window.as_tuple()
 df = (
     FlockingLive(
         FlockingConfig(
-            duration=10*60,
+            duration=10 * 60,
             image_rotation=True,
             movement_speed=1,
             radius=50,
