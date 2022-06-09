@@ -7,13 +7,14 @@ from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
 
 
+
 @deserialize
 @dataclass
 class FlockingConfig(Config):
-    alignment_weight: float = 0.4
-    cohesion_weight: float = 0.3
-    separation_weight: float = 0.3
-    random_weight: float = 0.1
+    alignment_weight: float = 0.75
+    cohesion_weight: float = 0.4
+    separation_weight: float = 0.4
+    random_weight: float = 0.7
 
     delta_time: float = 3
 
@@ -42,7 +43,7 @@ class Bird(Agent):
             f_total = (self.config.alignment_weight * a +
                        self.config.separation_weight * s +
                        self.config.cohesion_weight * c +
-                       self.config.random_weight * np.random.random((2))) / self.config.mass
+                       self.config.random_weight * np.random.normal(size = 2)) / self.config.mass
 
             self.move += f_total  # update move angle and velocity
 
@@ -55,8 +56,6 @@ class Bird(Agent):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) < self.config.movement_speed else self.move
         self.move = pg.Vector2((self.move[0],self.move[1]))
         self.pos += self.move * self.config.delta_time #update pos
-
-
         #END CODE -----------------
 
 
@@ -79,7 +78,7 @@ class FlockingLive(Simulation):
         elif self.selection == Selection.SEPARATION:
             self.config.separation_weight += by
         elif self.selection == Selection.RANDOM:
-            self.config.random_weigth += by
+            self.config.random_weight += by
 
     def before_update(self):
         super().before_update()
@@ -87,9 +86,9 @@ class FlockingLive(Simulation):
         for event in pg.event.get():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_UP:
-                    self.handle_event(by=0.1)
+                    self.handle_event(by=0.05)
                 elif event.key == pg.K_DOWN:
-                    self.handle_event(by=-0.1)
+                    self.handle_event(by=-0.05)
                 elif event.key == pg.K_1:
                     self.selection = Selection.ALIGNMENT
                 elif event.key == pg.K_2:
