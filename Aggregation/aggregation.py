@@ -10,10 +10,7 @@ from vi.config import Config, dataclass, deserialize
 @deserialize
 @dataclass
 class AggregationConfig(Config):
-    alignment_weight: float = 0.80
-    cohesion_weight: float = 0.2
-    separation_weight: float = 0.2
-    random_weight: float = 0.3
+    random_weight = 3
 
     delta_time: float = 2
     mass: int = 20
@@ -24,93 +21,47 @@ class AggregationConfig(Config):
 
 class Cockroach(Agent):
     config: AggregationConfig
-
     def change_position(self):
-
-        #YOUR CODE HERE -----------
         n = list(self.in_proximity_accuracy()) #list of neighbors
-        if len(n) > 0: #if we have n
-            pos = [s[0].pos for s in n] #positions of n
-            vec = [s[0].move for s in n]
+        leave = 0.1 **  len(n) if len(n) > 0 else 0.1
 
-            if np.arccos(np.dot(np.average(vec,axis = 0), self.move)) < 0.5:
-                self.change_image(1)
-            else: self.change_image(0)
+        """
+        if len(n) > 1:
+            if np.random.uniform() > 0.999:
+                self.move = pg.Vector2((0,0))
+            else: self.move *= (1 - len(n))
+            if np.linalg.norm(self.move) < 0.1 and np.random.uniform() > (1-leave):
+                self.move = np.random.uniform(low = -1, high = 1, size = 2)
+        """
 
-            c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
-            s = np.average([self.pos - x for x in pos], axis = 0) #seperation
-            a = np.average(vec, axis = 0) - self.move #alignment
-
-
-            f_total = (self.config.alignment_weight * a +
-                       self.config.separation_weight * s +
-                       self.config.cohesion_weight * c +
-                       self.config.random_weight * np.random.uniform(low = -0.5, high = 0.5, size = 2)) / self.config.mass
-
-            self.move += f_total  # update move angle and velocity
-        else: self.change_image(0)
-
+        #collision detection
         coll = list(self.obstacle_intersections(scale = 2))
         if len(coll) > 0:
             for c in coll:
                 nm = self.move-(c-self.pos) #current move velocity - distance to the obstacle
                 self.move = nm / np.linalg.norm(nm) #normalize vector
 
-        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) < self.config.movement_speed else self.move
-        self.move = pg.Vector2((self.move[0],self.move[1]))
-        self.pos += self.move * self.config.delta_time #update pos
-        #END CODE -----------------
+        if self.on_site():
+            if np.random.uniform() > 0.9:
+                self.move = pg.Vector2((0,0))
+            if np.linalg.norm(self.move) < 0.1 and np.random.uniform() > (1-leave):
+                self.move = np.random.uniform(low = -1, high = 1, size = 2)
+        else:
+            self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+            f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
+            self.move += f_total
 
-
-class Selection(Enum):
-    ALIGNMENT = auto()
-    COHESION = auto()
-    SEPARATION = auto()
-    RANDOM = auto()
+        self.pos += self.move * self.config.delta_time  #update pos
 
 
 class AggregationLive(Simulation):
-    selection: Selection = Selection.ALIGNMENT
     config: AggregationConfig
-
-    def handle_event(self, by: float):
-        if self.selection == Selection.ALIGNMENT:
-            self.config.alignment_weight += by
-        elif self.selection == Selection.COHESION:
-            self.config.cohesion_weight += by
-        elif self.selection == Selection.SEPARATION:
-            self.config.separation_weight += by
-        elif self.selection == Selection.RANDOM:
-            self.config.random_weight += by
-
-    def before_update(self):
-        super().before_update()
-
-        for event in pg.event.get():
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_UP:
-                    self.handle_event(by=0.05)
-                elif event.key == pg.K_DOWN:
-                    self.handle_event(by=-0.05)
-                elif event.key == pg.K_1:
-                    self.selection = Selection.ALIGNMENT
-                elif event.key == pg.K_2:
-                    self.selection = Selection.COHESION
-                elif event.key == pg.K_3:
-                    self.selection = Selection.SEPARATION
-                elif event.key == pg.K_4:
-                    self.selection = Selection.RANDOM
-
-        a, c, s, w = self.config.weights()
-        print(f"A: {a:.2f} - C: {c:.2f} - S: {s:.2f} - W: {w:.2f}")
-
 
 x, y = AggregationConfig().window.as_tuple()
 
 df = (
     AggregationLive(
         AggregationConfig(
-            duration=10 * 60,
             movement_speed=1,
             radius=50,
             seed=1,
