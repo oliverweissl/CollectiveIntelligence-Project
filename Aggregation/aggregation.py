@@ -23,7 +23,7 @@ class Cockroach(Agent):
     config: AggregationConfig
     def change_position(self):
         n = list(self.in_proximity_accuracy()) #list of neighbors
-        leave = 0.1 **  len(n) if len(n) > 0 else 0.1
+        leave = 0.3 **  len(n) if len(n) > 0 else 0.3
 
         """
         if len(n) > 1:
