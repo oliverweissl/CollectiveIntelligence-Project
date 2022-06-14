@@ -26,6 +26,7 @@ for experiment_i in range(1):
         def change_position(self):
             n = list(self.in_proximity_accuracy()) #list of neighbors
             p_leave = experiment_i * 0.1
+            p_join = experiment_j * 0.1
             leave = p_leave ** len(n) if len(n) > 0 else p_leave
 
             """
@@ -45,7 +46,7 @@ for experiment_i in range(1):
                     self.move = nm / np.linalg.norm(nm) #normalize vector
 
             if self.on_site():
-                if np.random.uniform() > 0.9:
+                if np.random.uniform() > p_join:
                     self.move = pg.Vector2((0,0))
                     self.change_image(1)
                 if np.linalg.norm(self.move) < 0.1 and np.random.uniform() > (1-leave):
