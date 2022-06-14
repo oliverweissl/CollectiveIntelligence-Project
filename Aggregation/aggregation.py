@@ -1,38 +1,69 @@
-from enum import Enum, auto
+from typing import TYPE_CHECKING, Any, Generator, Optional
+from pygame.mask import Mask
+from pygame.math import Vector2
+from pygame.rect import Rect
+from pygame.sprite import Group, Sprite
+from pygame.surface import Surface
+from typing_extensions import Self
 
+
+import math
 import numpy as np
 import pygame as pg
 import pygame.camera as pgc
 from pygame.math import Vector2
-from vi import Agent, Simulation
+from vi.util import random_angle, random_pos, round_pos
+from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize
+
 
 @deserialize
 @dataclass
 class AggregationConfig(Config):
     random_weight = 3
 
+    weigth_leave = 0.2
+    weight_join = 0.9
+
     delta_time: float = 2
     mass: int = 20
 
-    def weights(self) -> tuple[float, float, float, float]:
-        return (self.alignment_weight, self.cohesion_weight, self.separation_weight, self.random_weight)
 
 
 class Cockroach(Agent):
     config: AggregationConfig
+    def __init__(self, images: list[Surface], simulation: HeadlessSimulation, pos: Optional[Vector2] = None, move: Optional[Vector2] = None):
+        Agent.__init__(self, images=images, simulation=simulation,pos=pos,move=move)
+        self.loneliness = 0.5
+        self.on_place = 0
+        self.last_move = pg.Vector2((0,0))
+
     def change_position(self):
         n = list(self.in_proximity_accuracy()) #list of neighbors
-        leave = 0.3 **  len(n) if len(n) > 0 else 0.3
+        len_n = len(n)
 
-        """
-        if len(n) > 1:
-            if np.random.uniform() > 0.999:
-                self.move = pg.Vector2((0,0))
-            else: self.move *= (1 - len(n))
-            if np.linalg.norm(self.move) < 0.1 and np.random.uniform() > (1-leave):
-                self.move = np.random.uniform(low = -1, high = 1, size = 2)
-        """
+
+        P_leave = self.config.weigth_leave / len_n ** math.log(len_n) if len_n > 0 else self.config.weigth_leave
+        P_join = 1-(0.8**math.log(len_n)) if len_n > 2 else 0.5
+
+        self.on_place += 1 if self.on_site() else 0
+
+
+        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+        f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
+        self.move += f_total
+
+        self.move *= 0.5 ** self.on_place
+        print(np.linalg.norm(self.move))
+        if np.linalg.norm(self.move) < 0.3:
+            self.last_move = self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.last_move
+            self.move = pg.Vector2((0,0)) if np.random.uniform() < P_join else self.move
+            self.change_image(1)
+
+            self.move = self.last_move * (1-(0.9 + self.loneliness)/2) if np.random.uniform() < P_leave else self.move
+        else: self.change_image(0)
+
+
 
         #collision detection
         coll = list(self.obstacle_intersections(scale = 2))
@@ -41,27 +72,18 @@ class Cockroach(Agent):
                 nm = self.move-(c-self.pos) #current move velocity - distance to the obstacle
                 self.move = nm / np.linalg.norm(nm) #normalize vector
 
-        if self.on_site():
-            if np.random.uniform() > 0.9:
-                self.move = pg.Vector2((0,0))
-            if np.linalg.norm(self.move) < 0.1 and np.random.uniform() > (1-leave):
-                self.move = np.random.uniform(low = -1, high = 1, size = 2)
-        else:
-            self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
-            f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
-            self.move += f_total
-
+        self.loneliness = 1/(1+np.exp(-0.5*len_n+3))
         self.pos += self.move * self.config.delta_time  #update pos
 
 
-class AggregationLive(Simulation):
-    config: AggregationConfig
+
 
 x, y = AggregationConfig().window.as_tuple()
 
 df = (
-    AggregationLive(
+    Simulation(
         AggregationConfig(
+            fps_limit = 0,
             movement_speed=1,
             radius=50,
             seed=1,
