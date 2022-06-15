@@ -30,89 +30,89 @@ class AggregationConfig(Config):
 
 
 
-for experiment_l in [2]:
-    class Cockroach(Agent):
-        config: AggregationConfig
-        def __init__(self, images: list[Surface], simulation: HeadlessSimulation, pos: Optional[Vector2] = None, move: Optional[Vector2] = None):
-            Agent.__init__(self, images=images, simulation=simulation,pos=pos,move=move)
-            self.loneliness = 0.5
-            self.on_place = 0
-            self.last_move = pg.Vector2((0,0))
 
-            self.last_seen = [0]*10
-            self.age = 1
+class Cockroach(Agent):
+    config: AggregationConfig
+    def __init__(self, images: list[Surface], simulation: HeadlessSimulation, pos: Optional[Vector2] = None, move: Optional[Vector2] = None):
+        Agent.__init__(self, images=images, simulation=simulation,pos=pos,move=move)
+        self.loneliness = 0.5
+        self.on_place = 0
+        self.last_move = pg.Vector2((0,0))
 
-        def change_position(self):
-            n = list(self.in_proximity_accuracy()) #list of neighbors
-            len_n = len(n)
-            self.last_seen.append(len_n)
-            self.last_seen.pop(0)
+        self.last_seen = [0]*10
+        self.age = 1
 
-            self.loneliness = 1/(1+np.exp(-0.4*np.average(self.last_seen)+3))*math.log(self.age)
+    def change_position(self):
+        n = list(self.in_proximity_accuracy()) #list of neighbors
+        len_n = len(n)
+        self.last_seen.append(len_n)
+        self.last_seen.pop(0)
 
-            P_join = 0
-            P_leave = self.config.weigth_leave / len_n ** math.log(len_n) if len_n > 0 else self.config.weigth_leave
+        self.loneliness = 1/(1+np.exp(-0.4*np.average(self.last_seen)+3))*math.log(self.age)
 
-
-            if self.on_site():
-                self.on_place+=2
-                P_join = 0.5
-            elif len(n) > 2:
-                self.on_place+=1
-                P_join = 1-(0.8**math.log(len_n))
-            else: self.on_place=0
+        P_join = 0
+        P_leave = self.config.weigth_leave / len_n ** math.log(len_n) if len_n > 0 else self.config.weigth_leave
 
 
-            self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
-            f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
-            self.move += f_total
+        if self.on_site():
+            self.on_place+=2
+            P_join = 0.5
+        elif len(n) > 2:
+            self.on_place+=1
+            P_join = 1-(0.8**math.log(len_n))
+        else: self.on_place=0
 
 
-            if np.random.uniform() < P_join:
-                self.move *= (experiment_l*0.1) ** self.on_place #experiment with slowing
-
-            if np.linalg.norm(self.move) < 0.4:
-                self.move = pg.Vector2((0,0))
-
-                self.change_image(self.on_site_id()+2) if self.on_site_id() is not None else self.change_image(1)
-                self.move = np.random.uniform(low = -0.2, high = 0.2, size = 2)*(1-self.loneliness) if np.random.uniform() < P_leave else self.move
-            else: self.change_image(0)
+        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+        f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
+        self.move += f_total
 
 
+        if np.random.uniform() < P_join:
+            self.move *= 0.2 ** self.on_place #experiment with slowing
 
-            #collision detection
-            coll = list(self.obstacle_intersections(scale = 2))
-            if len(coll) > 0:
-                for c in coll:
-                    nm = self.move-(c-self.pos) #current move velocity - distance to the obstacle
-                    self.move = nm / np.linalg.norm(nm) #normalize vector
+        if np.linalg.norm(self.move) < 0.4:
+            self.move = pg.Vector2((0,0))
 
-            self.pos += self.move * self.config.delta_time  #update pos
-            self.age+=1
+            self.change_image(self.on_site_id()+2) if self.on_site_id() is not None else self.change_image(1)
+            self.move = np.random.uniform(low = -0.2, high = 0.2, size = 2)*(1-self.loneliness) if np.random.uniform() < P_leave else self.move
+        else: self.change_image(0)
 
 
-    x, y = AggregationConfig().window.as_tuple()
-    print(x,y)
-    df = (
-        Simulation(
-            AggregationConfig(
-                fps_limit = 0,
-                duration = 10000,
-                movement_speed=1,
-                radius=50,
-                seed=1,
-            )
+
+        #collision detection
+        coll = list(self.obstacle_intersections(scale = 2))
+        if len(coll) > 0:
+            for c in coll:
+                nm = self.move-(c-self.pos) #current move velocity - distance to the obstacle
+                self.move = nm / np.linalg.norm(nm) #normalize vector
+
+        self.pos += self.move * self.config.delta_time  #update pos
+        self.age+=1
+
+
+x, y = AggregationConfig().window.as_tuple()
+print(x,y)
+df = (
+    Simulation(
+        AggregationConfig(
+            fps_limit = 0,
+            duration = 10000,
+            movement_speed=1,
+            radius=50,
+            seed=1,
         )
-        .spawn_obstacle("images/boundary.png", x//2,  y//2)
-
-        .batch_spawn_agents(50, Cockroach, images=["images/white.png","images/red.png","images/blue.png","images/green.png"])
-        .run()
     )
-    #.spawn_site("images/shadow_norm.png", x//2 , y//2)
+    .spawn_obstacle("images/boundary.png", x//2,  y//2)
 
-    dfs = df.snapshots
-    dfs.write_csv(f"X.csv")
+    .batch_spawn_agents(50, Cockroach, images=["images/white.png","images/red.png","images/blue.png","images/green.png"])
+    .run()
+)
+#.spawn_site("images/shadow_norm.png", x//2 , y//2)
 
-    dx=pd.read_csv(f"X.csv")
-    score = dx["image_index"][dx["image_index"]!=1].count() / 10000
-    print(f"l,j,i: {experiment_l}, score: {score}")
+dfs = df.snapshots
+dfs.write_csv(f"X.csv")
+
+dx=pd.read_csv(f"X.csv")
+score = dx["image_index"][dx["image_index"]!=1].count() / 10000
+print(f"l,j,i: {experiment_l}, score: {score}")
