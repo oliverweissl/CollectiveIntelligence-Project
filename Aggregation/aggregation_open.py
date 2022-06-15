@@ -113,7 +113,6 @@ df = (
         )
     )
     .spawn_obstacle("images/boundary.png", x//2,  y//2)
-
     .batch_spawn_agents(50, Cockroach, images=["images/white.png","images/red.png","images/blue.png","images/green.png"])
     .run()
 )
