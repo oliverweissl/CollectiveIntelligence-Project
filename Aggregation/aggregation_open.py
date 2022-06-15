@@ -43,12 +43,12 @@ class AggregationConfig(Config):
 class Cockroach(Agent):
     config: AggregationConfig
     def __init__(self, images: list[Surface], simulation: HeadlessSimulation, pos: Optional[Vector2] = None, move: Optional[Vector2] = None):
-        super().__init__(self, images=images, simulation=simulation,pos=pos,move=move)
+        Agent.__init__(self, images=images, simulation=simulation,pos=pos,move=move)
         self.loneliness = 0.5
         self.on_place = 0
         self.last_move = pg.Vector2((0,0))
 
-        self.last_seen = [0]*self.config.memory
+        self.last_seen = [0]*self.config.mermory
         self.age = 1
 
     def change_position(self):
