@@ -22,8 +22,15 @@ from vi.config import Config, dataclass, deserialize
 class AggregationConfig(Config):
     random_weight = 3
 
-    weigth_leave = 0.2
-    weight_join = 0.9
+    weigth_leave = 0.2 #gamma
+    weight_join = 0.5
+
+
+    #params for search
+    join_param = 0.8
+    loneliness_v1 = -0.4
+    loneliness_v2 = 3
+
 
     delta_time: float = 2
     mass: int = 20
@@ -34,7 +41,7 @@ class AggregationConfig(Config):
 class Cockroach(Agent):
     config: AggregationConfig
     def __init__(self, images: list[Surface], simulation: HeadlessSimulation, pos: Optional[Vector2] = None, move: Optional[Vector2] = None):
-        Agent.__init__(self, images=images, simulation=simulation,pos=pos,move=move)
+        super().__init__(self, images=images, simulation=simulation,pos=pos,move=move)
         self.loneliness = 0.5
         self.on_place = 0
         self.last_move = pg.Vector2((0,0))
@@ -48,18 +55,18 @@ class Cockroach(Agent):
         self.last_seen.append(len_n)
         self.last_seen.pop(0)
 
-        self.loneliness = 1/(1+np.exp(-0.4*np.average(self.last_seen)+3))*math.log(self.age)
+        self.loneliness = 1/(1+np.exp(self.config.loneliness_v1*np.average(self.last_seen)+self.config.loneliness_v2))*math.log(self.age)
 
         P_join = 0
         P_leave = self.config.weigth_leave / len_n ** math.log(len_n) if len_n > 0 else self.config.weigth_leave
 
 
         if self.on_site():
-            self.on_place+=2
-            P_join = 0.5
+            self.on_place  +=2
+            P_join = self.config.weight_join
         elif len(n) > 2:
             self.on_place+=1
-            P_join = 1-(0.8**math.log(len_n))
+            P_join = 1-(self.config.join_param**math.log(len_n))
         else: self.on_place=0
 
 
@@ -69,7 +76,7 @@ class Cockroach(Agent):
 
 
         if np.random.uniform() < P_join:
-            self.move *= 0.2 ** self.on_place #experiment with slowing
+            self.move *= self.config.weigth_leave ** math.log(self.on_place) #experiment with slowing
 
         if np.linalg.norm(self.move) < 0.4:
             self.move = pg.Vector2((0,0))
@@ -115,4 +122,4 @@ dfs.write_csv(f"X.csv")
 
 dx=pd.read_csv(f"X.csv")
 score = dx["image_index"][dx["image_index"]!=1].count() / 10000
-print(f"l,j,i: {experiment_l}, score: {score}")
+print(f"score: {score}")
