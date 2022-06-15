@@ -31,6 +31,8 @@ class AggregationConfig(Config):
     loneliness_v1 = -0.4
     loneliness_v2 = 3
 
+    mermory = 10 #memory of individual
+
 
     delta_time: float = 2
     mass: int = 20
@@ -46,7 +48,7 @@ class Cockroach(Agent):
         self.on_place = 0
         self.last_move = pg.Vector2((0,0))
 
-        self.last_seen = [0]*10
+        self.last_seen = [0]*self.config.memory
         self.age = 1
 
     def change_position(self):
