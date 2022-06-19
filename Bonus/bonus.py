@@ -33,12 +33,31 @@ class Fox(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
-
         if self.energy == 0: self.kill()
+
         if self.is_alive():
+            self.age += 0.01
+            self.energy -= 1
+
             self.random_move()
             self.update_location()
-            print(f"found rabbit: {self.in_proximity_accuracy().filter_kind(Rabbit)}")
+
+            if self.energy < 70:
+                self.change_image(1)
+                r = list(set(self.in_proximity_accuracy().filter_kind(Rabbit)))
+                if len(r)>0:
+                    r[0][0].kill()
+                    self.energy += 50 if self.energy < 60 else 100
+                    self.change_image(0)
+            else:
+                f = list(set(self.in_proximity_accuracy().filter_kind(Fox)))
+                if len(f)>0 and self.age > 1 and f[0][0].age > 1:
+                    f[0][0].change_image(2)
+                    self.change_image(2)
+                    f[0][0].energy -= 20
+                    self.energy -= 20
+                    self.reproduce()
+
 
 
 class Rabbit(Agent):
