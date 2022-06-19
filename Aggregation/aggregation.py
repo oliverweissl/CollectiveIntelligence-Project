@@ -67,10 +67,10 @@ df = (
             seed=1,
         )
     )
-    .spawn_obstacle("images/boundary.png", x//2,  y//2)
-    .spawn_site("images/shadow_norm.png", x//2 , y//2)
-    .batch_spawn_agents(50, Cockroach, images=["images/white.png","images/red.png"])
-    .run()
+        .spawn_obstacle("images/boundary.png", x//2,  y//2)
+        .spawn_site("images/shadow_norm.png", x//2 , y//2)
+        .batch_spawn_agents(50, Cockroach, images=["images/white.png","images/red.png"])
+        .run()
 )
 
 
