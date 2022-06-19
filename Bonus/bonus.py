@@ -6,36 +6,77 @@ import pygame.camera as pgc
 from pygame.math import Vector2
 from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
+GLOBAL_SEED = 1
 
 @deserialize
 @dataclass
-GLOBAL_SEED = 1
-
-class AggregationConfig(Config):
+class Conf(Config):
     random_weight = 3
     delta_time: float = 2
     mass: int = 20
 
 
-
 class Fox(Agent):
-    config: AggregationConfig
+    config: Conf
+    def __init__(self,  *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.energy = 100
+        self.age = 0
+        self.max_age = 14
+
+    def random_move(self):
+        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+        f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
+        self.move += f_total
+    def update_location(self):
+        self.pos += self.move * self.config.delta_time
+
     def change_position(self):
+        self.there_is_no_escape()
+
+        if self.energy == 0: self.kill()
+        if self.is_alive():
+            self.random_move()
+            self.update_location()
+            print(f"found rabbit: {self.in_proximity_accuracy().filter_kind(Rabbit)}")
+
 
 class Rabbit(Agent):
-    config: AggregationConfig
+    config: Conf
+    def __init__(self,  *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.energy = 100
+        self.age = 0
+        self.max_age = 12
+
+    def random_move(self):
+        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+        f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2))/self.config.mass
+        self.move += f_total
+    def update_location(self):
+        self.pos += self.move * self.config.delta_time
+
     def change_position(self):
+        self.there_is_no_escape()
+
+        if self.energy == 0: self.kill()
+        if self.is_alive():
+            self.random_move()
+            self.update_location()
+
+            print(f"found fox: {self.in_proximity_accuracy().filter_kind(Fox)}")
 
 
 
 class Live(Simulation):
-    config: Config
+    config: Conf
 
-x, y = Config().window.as_tuple()
+x, y = Conf().window.as_tuple()
 df = (
     Live(
-        Config(
+        Conf(
             movement_speed=1,
+            image_rotation=True,
             radius=50,
             seed=GLOBAL_SEED,
         )
