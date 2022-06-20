@@ -116,7 +116,7 @@ df = (
         #.spawn_site("images/shadow_norm.png", 150 , y//2)
         #.spawn_site("images/shadow_norm.png", x-150 , y//2)
         .batch_spawn_agents(66, Rabbit, images=["images/white.png"])
-        .batch_spawn_agents(10, Fox, images=["images/bird_red.png"])
+        .batch_spawn_agents(10, Fox, images=["images/fox.png"])
         .run()
 )
 

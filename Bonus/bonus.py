@@ -123,7 +123,7 @@ df = (
         )
     )
         .batch_spawn_agents(500, Rabbit, images=["images/white.png","images/red.png","images/green.png"])
-        .batch_spawn_agents(20, Fox, images=["images/bird.png","images/bird_red.png","images/bird_green.png"])
+        .batch_spawn_agents(20, Fox, images=["images/fox.png","images/bird_red.png","images/bird_green.png"])
         .run()
 )
 
