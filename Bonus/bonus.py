@@ -7,7 +7,7 @@ from pygame.math import Vector2
 from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize, Window
 
-GLOBAL_SEED = 1
+GLOBAL_SEED = np.random.randint(0,1000000)
 
 @deserialize
 @dataclass
@@ -59,7 +59,7 @@ class Fox(Agent):
 
 
     def change_position(self):
-        self.change_image(1)
+        self.change_image(0)
         self.there_is_no_escape()
         if self.energy <= 1: self.kill()
 
@@ -71,9 +71,11 @@ class Fox(Agent):
             r = list(n.filter_kind(Rabbit))
             self.f = list(n.filter_kind(Fox))
             if len(r) > 0:
+                self.change_image(1)
                 r[0][0].kill()
                 self.energy = min(300, self.energy+40)
                 if np.random.uniform() < self.p_reproduce:
+                    self.change_image(2)
                     self.reproduce()
 
             self.change_image(1)
@@ -122,10 +124,13 @@ class Rabbit(Agent):
         if self.energy == 0: self.kill()
 
         if self.is_alive():
+            self.change_image(0)
             self.r = list(self.in_proximity_accuracy())
 
             prob = self.p_reproduction/(len(self.r)) if len(self.r) > 0 else self.p_reproduction
-            if np.random.uniform() < prob: self.reproduce()
+            if np.random.uniform() < prob:
+                self.change_image(2)
+                self.reproduce()
             self.random_move()
 
 
