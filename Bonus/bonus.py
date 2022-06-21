@@ -74,8 +74,6 @@ class Fox(Agent):
             self.f = list(self.in_proximity_accuracy().filter_kind(Fox))
             r = list(self.in_proximity_accuracy().filter_kind(Rabbit))
 
-            # if len(self.f)>0:
-            #     print(r,self.f)
             if len(r) > 0:
                 # self.change_image(1)
                 r[0][0].kill()
@@ -142,13 +140,19 @@ class Rabbit(Agent):
 
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
-        if self.shared.counter % 100 == 0:
-         print(self.shared.counter)
+        # if self.shared.counter % 100 == 0:
+        #     print(self.shared.counter)
 
+        agents = list(self._agents.__iter__())
+        prey_count = len(list(filter(lambda x: str(x) == '<Rabbit Sprite(in 2 groups)>', agents)))
+        predator_count = len(list(filter(lambda x: str(x) == '<Fox Sprite(in 2 groups)>', agents)))
+
+        if prey_count == 0 or predator_count == 0:
+            self.stop()
 
 
 
@@ -173,5 +177,5 @@ df = (
 )
 
 dfs = df.snapshots
-dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
+# dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
 
