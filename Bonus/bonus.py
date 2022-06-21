@@ -20,7 +20,7 @@ class Conf(Config):
     delta_time: float = 2
     mass: int = 20
 
-    hunter_visual_radius = 25
+    hunter_visual_radius = 30
     hunter_eating_radius = 17
     prey_visual_radius = 30
 
