@@ -6,6 +6,7 @@ import pygame.camera as pgc
 from pygame.math import Vector2
 from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize, Window
+
 GLOBAL_SEED = 1
 
 @deserialize
@@ -25,16 +26,11 @@ class Fox(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.max_age = 150*60
-        self.breed_age = 15*60
-        self.p_reproduction = 0.08
-
-        self.age = np.random.randint(0,self.max_age/2)
-
-        self.hunger = 10*60
-        self.max_hunger = 10*60
-        self.food_val = 9*60
+        self.energy = np.random.uniform()*100
+        self.age = 0
+        self.max_age = 14
+        self.p_reproduce = 0.15
+        self.fox_mass = self.config.mass/2
 
     def _collect_replay_data(self):
         super()._collect_replay_data()
@@ -65,13 +61,11 @@ class Fox(Agent):
     def change_position(self):
         self.change_image(1)
         self.there_is_no_escape()
-        if self.age > self.max_age or self.hunger <= 0: self.kill()
+        if self.energy <= 1: self.kill()
 
         if self.is_alive():
             self.p_reproduce = 1/self.energy
             self.energy *= 0.94
-
-
 
             n = self.in_proximity_accuracy()
             r = list(n.filter_kind(Rabbit))
@@ -92,12 +86,10 @@ class Rabbit(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.breed_age = 5*60
-        self.max_age = 40*60
-
-        self.age = np.random.randint(0,self.max_age/2)
-        self.p_reproduction = 0.12/40
+        self.energy = 100
+        self.age = 0
+        self.max_age = 12
+        self.p_reproduction = 0.008
 
     def _collect_replay_data(self):
         super()._collect_replay_data()
@@ -127,7 +119,8 @@ class Rabbit(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
-        if self.age > self.max_age: self.kill()
+        if self.energy == 0: self.kill()
+
         if self.is_alive():
             self.r = list(self.in_proximity_accuracy())
 
