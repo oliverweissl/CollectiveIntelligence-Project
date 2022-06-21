@@ -20,14 +20,18 @@ class Conf(Config):
     delta_time: float = 2
     mass: int = 20
 
+    hunter_visual_radius = 25
+    hunter_eating_radius = 17
+    prey_visual_radius = 30
 
-class Grass(Agent):
+
+class Food(Agent):
     def _collect_replay_data(self):
         super()._collect_replay_data()
-        self._Agent__simulation._metrics._temporary_snapshots["fox"].append(2) #fox:2 = grass
+        self._Agent__simulation._metrics._temporary_snapshots["type"].append(2) # 2: food
 
 
-class Fox(Agent):
+class Hunter(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,16 +39,16 @@ class Fox(Agent):
         self.age = 0
         self.max_age = 14
         self.p_reproduce = 0.15
-        self.fox_mass = self.config.mass/2
+        self.hunter_mass = self.config.mass/2
 
     def _collect_replay_data(self):
         super()._collect_replay_data()
-        self._Agent__simulation._metrics._temporary_snapshots["fox"].append(1)
+        self._Agent__simulation._metrics._temporary_snapshots["type"].append(1) # 1: hunter
 
     def random_move(self):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
 
-        if len(self.f) > 0:
+        if len(self.f) > 0: # alignment and cohesion with other hunters
             pos = [s[0].pos for s in self.f]
             vec = [s[0].move for s in self.f]
 
@@ -55,11 +59,25 @@ class Fox(Agent):
             f_total = (self.config.alignment_weight * a +
                        self.config.separation_weight * s +
                        self.config.cohesion_weight * c +
-                       self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.fox_mass
+                       self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.hunter_mass
+        
+        elif len(self.r_in_visual_radius) > 0: # alignment and cohesion with prey
+            pos = [s[0].pos for s in self.r_in_visual_radius]
+            vec = [s[0].move for s in self.r_in_visual_radius]
 
-        else: f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.fox_mass
+            c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
+            s = np.average([self.pos - x for x in pos], axis = 0) #seperation
+            a = np.average(vec, axis = 0) - self.move #alignment
+
+            f_total = (0 * a + # alignment
+                       0 * s + # separation
+                       1 * c + # cohesion
+                       0 * np.random.uniform(low = -1, high = 1, size = 2)) / self.hunter_mass
+
+        else: 
+            f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.hunter_mass
+
         self.move += f_total
-
         self.pos += self.move * self.config.delta_time
 
     def change_position(self):
@@ -71,12 +89,14 @@ class Fox(Agent):
             self.p_reproduce = 1/self.energy
             self.energy *= 0.94
 
-            self.f = list(self.in_proximity_accuracy().filter_kind(Fox))
-            r = list(self.in_proximity_accuracy().filter_kind(Rabbit))
-
-            if len(r) > 0:
+            self.f = list(self.in_proximity_accuracy().filter_kind(Hunter))
+            self.r = list(self.in_proximity_accuracy().filter_kind(Prey))
+            self.r_in_visual_radius = list(filter(lambda x: x[-1] < self.config.hunter_visual_radius, self.r))
+            self.r_in_eating_radius = list(filter(lambda x: x[-1] < self.config.hunter_eating_radius, self.r))
+            
+            if len(self.r_in_eating_radius) > 0:
                 # self.change_image(1)
-                r[0][0].kill()
+                self.r_in_eating_radius[0][0].kill()
                 self.energy = min(300, self.energy+40)
                 if np.random.uniform() < self.p_reproduce:
                     # self.change_image(2)
@@ -86,9 +106,7 @@ class Fox(Agent):
             self.random_move()
 
 
-
-
-class Rabbit(Agent):
+class Prey(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -99,14 +117,27 @@ class Rabbit(Agent):
 
     def _collect_replay_data(self):
         super()._collect_replay_data()
-        self._Agent__simulation._metrics._temporary_snapshots["fox"].append(0)
+        self._Agent__simulation._metrics._temporary_snapshots["type"].append(0) # 0: prey
 
     def random_move(self):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
 
-        if len(self.r) > 0:
-            pos = [s[0].pos for s in self.r]
-            vec = [s[0].move for s in self.r]
+        if len(self.f_in_visual_radius) > 0:
+            pos = [s[0].pos for s in self.f_in_visual_radius]
+            vec = [s[0].move for s in self.f_in_visual_radius]
+
+            c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
+            s = np.average([self.pos - x for x in pos], axis = 0) #seperation
+            a = np.average(vec, axis = 0) - self.move #alignment
+
+            f_total = (0 * a + # align
+                       1 * s + # separate
+                       0 * c + # coheise
+                       0 * np.random.uniform(low = -1, high = 1, size = 2)) / self.config.mass
+
+        elif len(self.r_in_visual_radius) > 0:
+            pos = [s[0].pos for s in self.r_in_visual_radius]
+            vec = [s[0].move for s in self.r_in_visual_radius]
 
             c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
@@ -116,6 +147,7 @@ class Rabbit(Agent):
                        self.config.separation_weight * s +
                        self.config.cohesion_weight * c +
                        self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.config.mass
+        
 
         else: f_total = (self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.config.mass
         self.move += f_total
@@ -129,15 +161,15 @@ class Rabbit(Agent):
 
         if self.is_alive():
             # self.change_image(0)
-            self.r = list(self.in_proximity_accuracy())
+            self._r = list(self.in_proximity_accuracy().filter_kind(Prey))
+            self.f_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
+            self.r_in_visual_radius = list(filter(lambda x: x[-1] < self.config.prey_visual_radius, self._r))
 
-            prob = self.p_reproduction/(len(self.r)) if len(self.r) > 0 else self.p_reproduction
+            prob = self.p_reproduction/(len(self.r_in_visual_radius)) if len(self.r_in_visual_radius) > 0 else self.p_reproduction
             if np.random.uniform() < prob:
                 # self.change_image(2)
                 self.reproduce()
             self.random_move()
-
-
 
 
 class Live(Simulation):
@@ -148,9 +180,10 @@ class Live(Simulation):
         #     print(self.shared.counter)
 
         agents = list(self._agents.__iter__())
-        prey_count = len(list(filter(lambda x: isinstance(x,Rabbit), agents)))
-        predator_count = len(list(filter(lambda x: isinstance(x,Fox), agents)))
-        if prey_count == 0 or predator_count == 0:
+        prey_count = len(list(filter(lambda x: isinstance(x,Prey), agents)))
+        hunter_count = len(list(filter(lambda x: isinstance(x,Hunter), agents)))
+        if prey_count == 0 or hunter_count == 0:
+            print(f'Simulation stopped because no {"prey" if prey_count == 0 else "hunter"} was left.')
             self.stop()
 
 
@@ -165,16 +198,15 @@ df = (
             movement_speed=1,
             image_rotation=True,
             print_fps=False,
-            radius=17,
+            radius=30,
             seed=GLOBAL_SEED
-
         )
     )
-        .batch_spawn_agents(500, Rabbit, images=["images/surfer.png"])
-        .batch_spawn_agents(20, Fox, images=["images/shark.png"])
+        .batch_spawn_agents(500, Prey, images=["images/surfer.png"])
+        .batch_spawn_agents(20, Hunter, images=["images/shark.png"])
         .run()
 )
 
 dfs = df.snapshots
-# dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
+dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
 
