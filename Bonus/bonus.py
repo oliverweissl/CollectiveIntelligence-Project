@@ -21,6 +21,11 @@ class Conf(Config):
     mass: int = 20
 
 
+class Grass(Agent):
+    def _collect_replay_data(self):
+        super()._collect_replay_data()
+        self._Agent__simulation._metrics._temporary_snapshots["fox"].append(2) #fox:2 = grass
+
 
 class Fox(Agent):
     config: Conf
@@ -136,8 +141,13 @@ class Rabbit(Agent):
 
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
+    def tick(self, *args, **kwargs):
+        super().tick(*args, **kwargs)
+        if self.shared.counter % 100 == 0:
+         print(self.shared.counter)
+
 
 
 
