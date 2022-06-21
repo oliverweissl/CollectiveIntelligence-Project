@@ -57,9 +57,8 @@ class Fox(Agent):
 
         self.pos += self.move * self.config.delta_time
 
-
     def change_position(self):
-        self.change_image(0)
+        # self.change_image(0)
         self.there_is_no_escape()
         if self.energy <= 1: self.kill()
 
@@ -67,18 +66,20 @@ class Fox(Agent):
             self.p_reproduce = 1/self.energy
             self.energy *= 0.94
 
-            n = self.in_proximity_accuracy()
-            r = list(n.filter_kind(Rabbit))
-            self.f = list(n.filter_kind(Fox))
+            self.f = list(self.in_proximity_accuracy().filter_kind(Fox))
+            r = list(self.in_proximity_accuracy().filter_kind(Rabbit))
+
+            # if len(self.f)>0:
+            #     print(r,self.f)
             if len(r) > 0:
-                self.change_image(1)
+                # self.change_image(1)
                 r[0][0].kill()
                 self.energy = min(300, self.energy+40)
                 if np.random.uniform() < self.p_reproduce:
-                    self.change_image(2)
+                    # self.change_image(2)
                     self.reproduce()
 
-            self.change_image(1)
+            # self.change_image(1)
             self.random_move()
 
 
@@ -124,12 +125,12 @@ class Rabbit(Agent):
         if self.energy == 0: self.kill()
 
         if self.is_alive():
-            self.change_image(0)
+            # self.change_image(0)
             self.r = list(self.in_proximity_accuracy())
 
             prob = self.p_reproduction/(len(self.r)) if len(self.r) > 0 else self.p_reproduction
             if np.random.uniform() < prob:
-                self.change_image(2)
+                # self.change_image(2)
                 self.reproduce()
             self.random_move()
 
@@ -150,14 +151,14 @@ df = (
             duration=50000,
             movement_speed=1,
             image_rotation=True,
-            print_fps=True,
+            print_fps=False,
             radius=17,
             seed=GLOBAL_SEED
 
         )
     )
-        .batch_spawn_agents(500, Rabbit, images=["images/white.png","images/red.png","images/green.png"])
-        .batch_spawn_agents(20, Fox, images=["images/fox.png","images/bird_red.png","images/bird_green.png"])
+        .batch_spawn_agents(500, Rabbit, images=["images/surfer.png"])
+        .batch_spawn_agents(20, Fox, images=["images/shark.png"])
         .run()
 )
 
