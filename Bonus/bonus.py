@@ -63,7 +63,7 @@ class Fox(Agent):
         self.pos += self.move * self.config.delta_time
 
     def change_position(self):
-        # self.change_image(0)
+        self.change_image(0)
         self.there_is_no_escape()
         if self.energy <= 1: self.kill()
 
@@ -75,14 +75,12 @@ class Fox(Agent):
             r = list(self.in_proximity_accuracy().filter_kind(Rabbit))
 
             if len(r) > 0:
-                # self.change_image(1)
+                self.change_image(1)
                 r[0][0].kill()
                 self.energy = min(300, self.energy+40)
                 if np.random.uniform() < self.p_reproduce:
-                    # self.change_image(2)
+                    self.change_image(2)
                     self.reproduce()
-
-            # self.change_image(1)
             self.random_move()
 
 
@@ -128,29 +126,26 @@ class Rabbit(Agent):
         if self.energy == 0: self.kill()
 
         if self.is_alive():
-            # self.change_image(0)
+            self.change_image(0)
             self.r = list(self.in_proximity_accuracy())
 
             prob = self.p_reproduction/(len(self.r)) if len(self.r) > 0 else self.p_reproduction
             if np.random.uniform() < prob:
-                # self.change_image(2)
+                self.change_image(2)
                 self.reproduce()
             self.random_move()
 
 
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
-        # if self.shared.counter % 100 == 0:
-        #     print(self.shared.counter)
+        if self.shared.counter % 100 == 0:
+            print(self.shared.counter)
 
-        agents = list(self._agents.__iter__())
-        prey_count = len(list(filter(lambda x: isinstance(x,Rabbit), agents)))
-        predator_count = len(list(filter(lambda x: isinstance(x,Fox), agents)))
-        if prey_count == 0 or predator_count == 0:
+        if len(list(filter(lambda x: isinstance(x,Fox), list(self._agents.__iter__())))) < 1:
             self.stop()
 
 
@@ -161,7 +156,6 @@ df = (
         Conf(
             window= Window(500,500),
             fps_limit=0,
-            duration=50000,
             movement_speed=1,
             image_rotation=True,
             print_fps=False,
@@ -170,11 +164,13 @@ df = (
 
         )
     )
-        .batch_spawn_agents(500, Rabbit, images=["images/surfer.png"])
-        .batch_spawn_agents(20, Fox, images=["images/shark.png"])
+        .batch_spawn_agents(500, Rabbit, images=["images/white.png","images/red.png","images/green.png"])
+        .batch_spawn_agents(20, Fox, images=["images/bird.png","images/bird_red.png","images/bird_green.png"])
         .run()
 )
 
 dfs = df.snapshots
-# dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
+dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
+
+
 
