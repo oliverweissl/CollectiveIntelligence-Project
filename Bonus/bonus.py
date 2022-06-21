@@ -148,9 +148,8 @@ class Live(Simulation):
         #     print(self.shared.counter)
 
         agents = list(self._agents.__iter__())
-        prey_count = len(list(filter(lambda x: str(x) == '<Rabbit Sprite(in 2 groups)>', agents)))
-        predator_count = len(list(filter(lambda x: str(x) == '<Fox Sprite(in 2 groups)>', agents)))
-
+        prey_count = len(list(filter(lambda x: isinstance(x,Rabbit), agents)))
+        predator_count = len(list(filter(lambda x: isinstance(x,Fox), agents)))
         if prey_count == 0 or predator_count == 0:
             self.stop()
 
