@@ -48,9 +48,9 @@ class Hunter(Agent):
     def random_move(self):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
 
-        if len(self.f) > 0: # alignment and cohesion with other hunters
-            pos = [s[0].pos for s in self.f]
-            vec = [s[0].move for s in self.f]
+        if len(self.hunters_in_visual_radius) > 0: # alignment and cohesion with other hunters
+            pos = [s[0].pos for s in self.hunters_in_visual_radius]
+            vec = [s[0].move for s in self.hunters_in_visual_radius]
 
             c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
@@ -61,9 +61,9 @@ class Hunter(Agent):
                        self.config.cohesion_weight * c +
                        self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.hunter_mass
         
-        elif len(self.r_in_visual_radius) > 0: # alignment and cohesion with prey
-            pos = [s[0].pos for s in self.r_in_visual_radius]
-            vec = [s[0].move for s in self.r_in_visual_radius]
+        elif len(self.prey_in_visual_radius) > 0: # alignment and cohesion with prey
+            pos = [s[0].pos for s in self.prey_in_visual_radius]
+            vec = [s[0].move for s in self.prey_in_visual_radius]
 
             c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
@@ -89,14 +89,14 @@ class Hunter(Agent):
             self.p_reproduce = 1/self.energy
             self.energy *= 0.94
 
-            self.f = list(self.in_proximity_accuracy().filter_kind(Hunter))
-            self.r = list(self.in_proximity_accuracy().filter_kind(Prey))
-            self.r_in_visual_radius = list(filter(lambda x: x[-1] < self.config.hunter_visual_radius, self.r))
-            self.r_in_eating_radius = list(filter(lambda x: x[-1] < self.config.hunter_eating_radius, self.r))
+            self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
+            self._prey_temp = list(self.in_proximity_accuracy().filter_kind(Prey))
+            self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.config.hunter_visual_radius, self._prey_temp))
+            self.prey_in_eating_radius = list(filter(lambda x: x[-1] < self.config.hunter_eating_radius, self._prey_temp))
             
-            if len(self.r_in_eating_radius) > 0:
+            if len(self.prey_in_eating_radius) > 0:
                 # self.change_image(1)
-                self.r_in_eating_radius[0][0].kill()
+                self.prey_in_eating_radius[0][0].kill()
                 self.energy = min(300, self.energy+40)
                 if np.random.uniform() < self.p_reproduce:
                     # self.change_image(2)
@@ -122,9 +122,9 @@ class Prey(Agent):
     def random_move(self):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
 
-        if len(self.f_in_visual_radius) > 0:
-            pos = [s[0].pos for s in self.f_in_visual_radius]
-            vec = [s[0].move for s in self.f_in_visual_radius]
+        if len(self.hunters_in_visual_radius) > 0:
+            pos = [s[0].pos for s in self.hunters_in_visual_radius]
+            vec = [s[0].move for s in self.hunters_in_visual_radius]
 
             c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
@@ -135,9 +135,9 @@ class Prey(Agent):
                        0 * c + # coheise
                        0 * np.random.uniform(low = -1, high = 1, size = 2)) / self.config.mass
 
-        elif len(self.r_in_visual_radius) > 0:
-            pos = [s[0].pos for s in self.r_in_visual_radius]
-            vec = [s[0].move for s in self.r_in_visual_radius]
+        elif len(self.prey_in_visual_radius) > 0:
+            pos = [s[0].pos for s in self.prey_in_visual_radius]
+            vec = [s[0].move for s in self.prey_in_visual_radius]
 
             c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
             s = np.average([self.pos - x for x in pos], axis = 0) #seperation
@@ -161,11 +161,11 @@ class Prey(Agent):
 
         if self.is_alive():
             # self.change_image(0)
-            self._r = list(self.in_proximity_accuracy().filter_kind(Prey))
-            self.f_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
-            self.r_in_visual_radius = list(filter(lambda x: x[-1] < self.config.prey_visual_radius, self._r))
+            self._temp_prey = list(self.in_proximity_accuracy().filter_kind(Prey))
+            self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
+            self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.config.prey_visual_radius, self._temp_prey))
 
-            prob = self.p_reproduction/(len(self.r_in_visual_radius)) if len(self.r_in_visual_radius) > 0 else self.p_reproduction
+            prob = self.p_reproduction/(len(self.prey_in_visual_radius)) if len(self.prey_in_visual_radius) > 0 else self.p_reproduction
             if np.random.uniform() < prob:
                 # self.change_image(2)
                 self.reproduce()
@@ -185,7 +185,6 @@ class Live(Simulation):
         if prey_count == 0 or hunter_count == 0:
             print(f'Simulation stopped because no {"prey" if prey_count == 0 else "hunter"} was left.')
             self.stop()
-
 
 
 x, y = Conf().window.as_tuple()
