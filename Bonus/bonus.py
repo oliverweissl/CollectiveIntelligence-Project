@@ -22,9 +22,29 @@ class Conf(Config):
 
 
 class Grass(Agent):
+    def __init__(self,  *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.freeze_movement()
+
+        self.grown = True
+        self.regrow = np.random.randint(20,50)
+        self.timer = np.random.randint(0,self.regrow)
+
     def _collect_replay_data(self):
         super()._collect_replay_data()
         self._Agent__simulation._metrics._temporary_snapshots["fox"].append(2) #fox:2 = grass
+
+    def update(self):
+        if self.alive():
+            if self.timer == self.regrow:
+                self.pos = pg.Vector2((np.random.randint(0,500),np.random.randint(0,500)))
+
+                self.grown = False
+                self.change_image(1)
+            elif self.timer == 0:
+                self.grown = True
+                self.change_image(0)
+            self.timer = max(0,self.timer-1)
 
 
 class Fox(Agent):
@@ -85,12 +105,11 @@ class Fox(Agent):
 
 
 
-
 class Rabbit(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.energy = 100
+        self.energy = 200
         self.age = 0
         self.max_age = 12
         self.p_reproduction = 0.008
@@ -122,23 +141,33 @@ class Rabbit(Agent):
 
 
     def change_position(self):
+        self.change_image(0)
         self.there_is_no_escape()
-        if self.energy == 0: self.kill()
+        if self.energy <= 1: self.kill()
 
         if self.is_alive():
-            self.change_image(0)
-            self.r = list(self.in_proximity_accuracy())
+            self.p_reproduce = 1/self.energy
+            self.energy *= 0.97
 
-            prob = self.p_reproduction/(len(self.r)) if len(self.r) > 0 else self.p_reproduction
-            if np.random.uniform() < prob:
-                self.change_image(2)
-                self.reproduce()
+            self.r = list(self.in_proximity_accuracy().filter_kind((Fox,Rabbit)))
+            g = list(self.in_proximity_accuracy().filter_kind(Grass).filter(lambda agent: agent[0].grown))
+            if len(g) > 0:
+                if self.energy < 170:
+                    self.change_image(1)
+                    g[0][0].timer = min(g[0][0].timer + 5, g[0][0].regrow)
+                    self.energy = min(200, self.energy+50)
+
+                prob = self.p_reproduction/(len(self.r)) if len(self.r) > 0 else self.p_reproduction
+                if np.random.uniform() < prob:
+                    self.change_image(2)
+                    self.reproduce()
+
             self.random_move()
 
 
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
@@ -164,13 +193,14 @@ df = (
 
         )
     )
+        .batch_spawn_agents(200, Grass, images =["images/grass.png","images/grass_dead.png"])
         .batch_spawn_agents(500, Rabbit, images=["images/white.png","images/red.png","images/green.png"])
         .batch_spawn_agents(20, Fox, images=["images/bird.png","images/bird_red.png","images/bird_green.png"])
         .run()
 )
 
 dfs = df.snapshots
-dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
+#dfs.write_parquet(f"X_{GLOBAL_SEED}.pqt")
 
 
 
