@@ -9,7 +9,6 @@ from vi.config import Config, dataclass, deserialize, Window
 
 for i in range(5):
     GLOBAL_SEED = np.random.randint(0,1000000)
-    frames = 0
 
     @deserialize
     @dataclass
@@ -26,20 +25,11 @@ for i in range(5):
         hunter_eating_radius = 17
         prey_visual_radius = 30
 
-
-    class Food(Agent):
-        def _collect_replay_data(self):
-            super()._collect_replay_data()
-            self._Agent__simulation._metrics._temporary_snapshots["type"].append(2) # 2: food
-
-
     class Hunter(Agent):
         config: Conf
         def __init__(self,  *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.energy = np.random.uniform()*100
-            self.age = 0
-            self.max_age = 14
             self.p_reproduce = 0.15
             self.hunter_mass = self.config.mass/2
 
@@ -70,7 +60,6 @@ for i in range(5):
                 ad,sd,cd,rd = 0,0,1,0
                 c,s,a, = self.calc(pos,vec)
 
-
             f_total = (ad * self.config.alignment_weight * a +
                        sd * self.config.separation_weight * s +
                        cd * self.config.cohesion_weight * c +
@@ -94,14 +83,11 @@ for i in range(5):
                 self.prey_in_eating_radius = list(filter(lambda x: x[-1] < self.config.hunter_eating_radius, _prey_temp))
 
                 if len(self.prey_in_eating_radius) > 0:
-                    # self.change_image(1)
                     self.prey_in_eating_radius[0][0].kill()
                     self.energy = min(300, self.energy+40)
                     if np.random.uniform() < self.p_reproduce:
-                        # self.change_image(2)
                         self.reproduce()
 
-                # self.change_image(1)
                 self.random_move()
 
 
@@ -109,9 +95,6 @@ for i in range(5):
         config: Conf
         def __init__(self,  *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self.energy = 100
-            self.age = 0
-            self.max_age = 12
             self.p_reproduction = 0.008
 
         def _collect_replay_data(self):
@@ -155,25 +138,22 @@ for i in range(5):
             if self.energy == 0: self.kill()
 
             if self.is_alive():
-
                 _temp_prey = list(self.in_proximity_accuracy().filter_kind(Prey))
                 self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
                 self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.config.prey_visual_radius, _temp_prey))
 
                 prob = self.p_reproduction/(len(self.prey_in_visual_radius)) if len(self.prey_in_visual_radius) > 0 else self.p_reproduction
                 if np.random.uniform() < prob:
-
                     self.reproduce()
                 self.random_move()
 
 
-    class Live(Simulation):
+    class Live(HeadlessSimulation):
         config: Conf
         def tick(self, *args, **kwargs):
             super().tick(*args, **kwargs)
             hunter_count = len(list(filter(lambda x: isinstance(x,Hunter), list(self._agents.__iter__()))))
             if hunter_count == 0:
-                frame = self.shared.counter
                 self.stop()
 
 
