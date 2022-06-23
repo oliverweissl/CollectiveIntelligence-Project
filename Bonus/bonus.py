@@ -135,7 +135,6 @@ for i in range(5):
 
         def change_position(self):
             self.there_is_no_escape()
-            if self.energy == 0: self.kill()
 
             if self.is_alive():
                 _temp_prey = list(self.in_proximity_accuracy().filter_kind(Prey))
