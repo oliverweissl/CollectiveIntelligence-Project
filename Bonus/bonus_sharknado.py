@@ -7,7 +7,7 @@ from pygame.math import Vector2
 from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize, Window
 
-GLOBAL_SEED = np.random.randint(0,1000000)
+
 
 @deserialize
 @dataclass
@@ -15,14 +15,14 @@ class Conf(Config):
     alignment_weight: float = 0.50
     cohesion_weight: float = 0.2
     separation_weight: float = 0.25
+    random_weight: float = 1.3
 
-    random_weight = 1.3
     delta_time: float = 2
     mass: int = 20
 
-    hunter_visual_radius = 30
-    hunter_eating_radius = 17
-    prey_visual_radius = 30
+    hunter_visual_radius: int = 30
+    hunter_eating_radius: int = 17
+    prey_visual_radius: int = 30
 
 class Hunter(Agent):
     config: Conf
@@ -44,6 +44,7 @@ class Hunter(Agent):
 
     def random_move(self):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+
         ad,sd,cd,rd = 0,0,0,1
         a,s,c = 0,0,0
         if len(self.hunters_in_visual_radius) > 0:
@@ -68,7 +69,6 @@ class Hunter(Agent):
         self.pos += self.move * self.config.delta_time
 
     def change_position(self):
-        # self.change_image(0)
         self.there_is_no_escape()
         if self.energy <= 1: self.kill()
 
@@ -108,6 +108,7 @@ class Prey(Agent):
 
     def random_move(self):
         self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+
         ad,sd,cd,rd = 0,0,0,1
         a,s,c = 0,0,0
         if len(self.hunters_in_visual_radius) > 0:
@@ -143,6 +144,7 @@ class Prey(Agent):
             prob = self.p_reproduction/(len(self.prey_in_visual_radius)) if len(self.prey_in_visual_radius) > 0 else self.p_reproduction
             if np.random.uniform() < prob:
                 self.reproduce()
+
             self.random_move()
 
 
@@ -159,15 +161,16 @@ class Live(HeadlessSimulation):
 frame_counter = []
 x, y = Conf().window.as_tuple()
 for i in range(5):
+    GLOBAL_SEED = np.random.randint(0,1000000)
+
     counter_t = 0
     df = (
         Live(
             Conf(
                 window= Window(500,500),
                 fps_limit=0,
-                duration=10,
                 movement_speed=1,
-                image_rotation=True,
+                #image_rotation=True,
                 print_fps=False,
                 radius=30,
                 seed=GLOBAL_SEED
@@ -178,9 +181,9 @@ for i in range(5):
             .run()
     )
 
-    frame_counter.append(counter_t)
+    frame_counter.append([GLOBAL_SEED,counter_t])
     dfs = df.snapshots
-    dfs.write_csv(f"X_{GLOBAL_SEED}_{i}.csv")
+    dfs.write_csv(f"X_{GLOBAL_SEED}.csv")
 
-with open(f"framecount_{GLOBAL_SEED}", "wb") as fp:
+with open(f"framecount", "wb") as fp:
     pickle.dump(frame_counter, fp)
