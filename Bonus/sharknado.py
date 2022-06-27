@@ -44,7 +44,7 @@ class Hunter(Agent):
     EXP_CHASE = 2.              # chasing expenditure coef
     EXP_IDENTITY_MASS = 15      # Mass for which the penalty for mass is 1.
     EXP_IDENTITY_RADIUS = 30
-    GENE_BOUNDS = [(7, 30), (20, 60)]
+    GENE_BOUNDS = [(7, 80), (1, 60)]
     
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -182,7 +182,7 @@ class Prey(Agent):
     EXP_FLEE = 2. # expenditure coef for fleeing
     EXP_IDENTITY_RADIUS = 30
     NORMAL_COEF = 2 # Normal noise for mutation std
-    GENE_BOUNDS = [(4, 30), (20, 60)]
+    GENE_BOUNDS = [(4, 60), (1, 60)]
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.energy = 300
@@ -206,10 +206,10 @@ class Prey(Agent):
 
 
     def reproduce(self):
-        random_normal_coef = np.random.normal(Prey.NORMAL_COEF)
+        random_normal_coef = np.random.normal(scale=Prey.NORMAL_COEF)
         child_genes = [None, None]
         child_genes[0] =  min(Prey.GENE_BOUNDS[0][1], max(Prey.GENE_BOUNDS[0][0], self.genes[0] + random_normal_coef))
-        random_normal_coef = np.random.normal(Prey.NORMAL_COEF)
+        random_normal_coef = np.random.normal(scale=Prey.NORMAL_COEF)
         child_genes[1] = min(Prey.GENE_BOUNDS[1][1], max(Prey.GENE_BOUNDS[1][0], self.genes[1] + random_normal_coef))
         child = copy(self)
         child.genes = child_genes
@@ -296,7 +296,7 @@ df = (
         Conf(
             window= Window(500,500),
             fps_limit=0,
-            duration=10000,
+            duration=20000,
             movement_speed=1,
             image_rotation=True,
             print_fps=False,
