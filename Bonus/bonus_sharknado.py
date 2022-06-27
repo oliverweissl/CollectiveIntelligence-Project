@@ -30,7 +30,7 @@ class Hunter(Agent):
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
-        self.id = f"{self.id}_{self.gene}" #record gene in df
+        self.id = int(f"{self.id}{''.join([str(x) for x in self.gene])}") #record gene in df
 
         self.mass = self.config.mass*(self.gene[0]/13 +0.3) #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.radius*(self.gene[1]/13 +0.3) #expression of vision gene - former: visual_radius
