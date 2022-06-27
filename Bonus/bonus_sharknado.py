@@ -8,6 +8,10 @@ from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize, Window
 
 
+def gen_gene():
+    return np.random.randint(0,9,4)
+
+
 
 @deserialize
 @dataclass
@@ -19,18 +23,36 @@ class Conf(Config):
 
     delta_time: float = 2
     mass: int = 20
+    radius: int = 30
 
-    hunter_visual_radius: int = 30
-    hunter_eating_radius: int = 17
-    prey_visual_radius: int = 30
+
+
+    #hunter_visual_radius: int = 30
+    #hunter_eating_radius: int = 17
+    #prey_visual_radius: int = 30
 
 class Hunter(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.energy = np.random.uniform()*100
+        self.gene = gen_gene()
+
+        self.mass = self.config.mass*(self.gene[0]/13 +0.3) #expression of mass gene f(x) = x/13 +0.3
+        self.vision = self.config.radius*(self.gene[1]/13 +0.3) #expression of vision gene
+        self.size = self.gene[2]
+        self.strength = self.gene[3] / 13 + 0.3
+
+
+        self.reach = self.vision / (self.size/30+0.3)
+        self.energy = self.mass * 6
+        self.change_image(self.gene[2]) #change image to size
+        self.speed = self.config.delta_time * self.strength / np.sqrt((self.mass + self.size)/10)
+
+
+
+
+        #self.energy = np.random.uniform()*100
         self.p_reproduce = 0.15
-        self.hunter_mass = self.config.mass/2
 
     def _collect_replay_data(self):
         super()._collect_replay_data()
@@ -63,10 +85,10 @@ class Hunter(Agent):
         f_total = (ad * self.config.alignment_weight * a +
                    sd * self.config.separation_weight * s +
                    cd * self.config.cohesion_weight * c +
-                   rd * self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.hunter_mass
+                   rd * self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.mass
 
         self.move += f_total
-        self.pos += self.move * self.config.delta_time
+        self.pos += self.move * self.speed
 
     def change_position(self):
         self.there_is_no_escape()
@@ -78,8 +100,8 @@ class Hunter(Agent):
 
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
             _prey_temp = list(self.in_proximity_accuracy().filter_kind(Prey))
-            self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.config.hunter_visual_radius, _prey_temp))
-            self.prey_in_eating_radius = list(filter(lambda x: x[-1] < self.config.hunter_eating_radius, _prey_temp))
+            self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.vision, _prey_temp))
+            self.prey_in_eating_radius = list(filter(lambda x: x[-1] < self.reach, _prey_temp))
 
             if len(self.prey_in_eating_radius) > 0:
                 self.prey_in_eating_radius[0][0].kill()
@@ -139,7 +161,7 @@ class Prey(Agent):
         if self.is_alive():
             _temp_prey = list(self.in_proximity_accuracy().filter_kind(Prey))
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
-            self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.config.prey_visual_radius, _temp_prey))
+            self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.config.radius, _temp_prey))
 
             prob = self.p_reproduction/(len(self.prey_in_visual_radius)) if len(self.prey_in_visual_radius) > 0 else self.p_reproduction
             if np.random.uniform() < prob:
@@ -148,7 +170,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         global counter_t
@@ -176,8 +198,8 @@ for i in range(5):
                 seed=GLOBAL_SEED
             )
         )
-            .batch_spawn_agents(500, Prey, images=["images/surfer.png"])
-            .batch_spawn_agents(20, Hunter, images=["images/shark.png"])
+            .batch_spawn_agents(500, Prey, images=["images/white.png"])
+            .batch_spawn_agents(20, Hunter, images=["images/bird_0.png","images/bird_1.png","images/bird_2.png","images/bird_3.png","images/bird_4.png","images/bird_5.png","images/bird_6.png","images/bird_7.png","images/bird_8.png","images/bird_9.png"])
             .run()
     )
 
