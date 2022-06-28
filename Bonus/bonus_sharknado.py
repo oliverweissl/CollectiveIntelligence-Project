@@ -48,6 +48,7 @@ class Hunter(Agent):
         self.max_energy = self.mass * 6 #max energy
         self.energy = self.max_energy
         self.repr_energy = int(self.max_energy*0.70)-20
+        self.consumption = 0.95 * (0.2*self.gene[0]+0.9)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1*self.gene[0] #calcualtion of speed - WIP
@@ -140,7 +141,7 @@ class Hunter(Agent):
 
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.repr_cool = random.randint(80,90)
-                self.change_image(int(self.gene[0] * 10) + 10)
+                #self.change_image(int(self.gene[0] * 10) + 10)
 
 
             self.random_move()
