@@ -2,7 +2,7 @@ import gc
 import pickle
 #import numpy as np
 
-from numpy import average, random, linalg
+from numpy import average, random, linalg, log
 from copy import copy
 from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize, Window
@@ -20,14 +20,14 @@ class Conf(Config):
     alignment_weight: float = 0.50
     cohesion_weight: float = 0.2
     separation_weight: float = 0.25
-    random_weight: float = 1.3
+    random_weight: float = 2
 
     delta_time: float = 2
     mass: int = 20
     radius: int = 30
 
 
-    visual_bounds = [10,70]
+    visual_bounds = [20,70]
     mass_bounds = [10,80]
 
     alpha: float = 0.1
@@ -45,10 +45,10 @@ class Hunter(Agent):
         self.mass = self.config.mass_bounds[0] + 60 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.visual_bounds[0] + 60 * self.gene[1] #expression of vision gene - former: visual_radius
 
-        self.max_energy = self.mass * 6 #max energy
+        self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
         self.repr_energy = int(self.max_energy*0.70)-20
-        self.consumption = 0.95 * (0.2*self.gene[0]+0.9)
+        self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1*self.gene[0] #calcualtion of speed - WIP
@@ -96,7 +96,7 @@ class Hunter(Agent):
             pos = [s[0].pos for s in self.hunters_in_visual_radius]
             vec = [s[0].move for s in self.hunters_in_visual_radius]
 
-            ad,sd,cd,rd = 1,1,1,1
+            ad,sd,cd,rd = 1,1,0.5,1
             c,s,a, = self.calc(pos,vec)
         elif len(self.prey_in_visual_radius) > 0:
             pos = [s[0].pos for s in self.prey_in_visual_radius]
@@ -118,7 +118,7 @@ class Hunter(Agent):
         if self.energy <= 1: self.kill()
 
         if self.is_alive():
-            self.energy *= 0.96
+            self.energy *= self.consumption
             self.repr_cool = max(0, self.repr_cool-1)
             if self.repr_cool == 1:
                 self.reproduce(self.partner)
@@ -140,7 +140,7 @@ class Hunter(Agent):
                     and self.hunters_in_visual_radius[0][0].energy >= self.hunters_in_visual_radius[0][0].repr_energy:
 
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
-                self.repr_cool = random.randint(80,90)
+                self.repr_cool = random.randint(200,300)
                 #self.change_image(int(self.gene[0] * 10) + 10)
 
 
@@ -239,7 +239,7 @@ for i in range(5):
                 seed=GLOBAL_SEED
             )
         )
-            .batch_spawn_agents(100, Prey, images=["images/white.png"])
+            .batch_spawn_agents(200, Prey, images=["images/white.png"])
             .batch_spawn_agents(20, Hunter, images=birds)
             .run()
     )
