@@ -38,7 +38,7 @@ class Hunter(Agent):
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
-        self.change_image(int(self.gene[0] * 10) - 1)  # change image to size
+        self.change_image(int(self.gene[0] * 10))  # change image to size
         self.id = int(f"{self.id}{''.join([str(int(x*100)).zfill(3) for x in self.gene])}") #record gene in df
 
 
@@ -50,7 +50,7 @@ class Hunter(Agent):
         self.repr_energy = int(self.max_energy*0.70)-20
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
-        self.speed = self.gene[1]*2 + 1 #calcualtion of speed - WIP
+        self.speed = self.gene[1]*2 + 1*self.gene[0] #calcualtion of speed - WIP
 
 
         self.repr_cool = 0
@@ -140,6 +140,7 @@ class Hunter(Agent):
 
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.repr_cool = random.randint(80,90)
+                self.change_image(int(self.gene[0] * 10) + 10)
 
 
             self.random_move()
@@ -219,6 +220,10 @@ class Live(Simulation):
 
 x, y = Conf().window.as_tuple()
 birds = [f"images/bird_{x}.png" for x in range(10)] #list of all bird sprites
+
+#if adding pregnancy image change:
+#preg_birds = [f"images/bird_{x}p.png" for x in range(10)] #list of all bird sprites]
+#birds.append(preg_birds)
 for i in range(5):
     GLOBAL_SEED = random.randint(0,1000000)
     df = (
