@@ -47,7 +47,7 @@ class Hunter(Agent):
 
         self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
-        self.repr_energy = int(self.max_energy*0.50)-20
+        #self.repr_energy = int(self.max_energy*0.50)-20
         self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
@@ -138,13 +138,11 @@ class Hunter(Agent):
 
 
             if len(self.hunters_in_visual_radius) > 0 and self.repr_cool == 0 \
-                    and self.energy >= self.repr_energy \
-                    and self.hunters_in_visual_radius[0][0].repr_cool == 0 \
-                    and self.hunters_in_visual_radius[0][0].energy >= self.hunters_in_visual_radius[0][0].repr_energy:
+                    and self.hunters_in_visual_radius[0][0].repr_cool == 0:
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.hunters_in_visual_radius[0][0].partner = self if self.hunters_in_visual_radius[0][0].partner == None else self.hunters_in_visual_radius[0][0].partner
-                self.hunters_in_visual_radius[0][0].repr_cool = random.randint(150,200)
-                self.repr_cool = random.randint(150,200)
+                self.hunters_in_visual_radius[0][0].repr_cool = random.randint(500,800)
+                self.repr_cool = random.randint(500,800)
                 #self.change_image(int(self.gene[0] * 10) + 10)
             self.random_move()
 
