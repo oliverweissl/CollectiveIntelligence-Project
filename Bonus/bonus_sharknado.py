@@ -212,7 +212,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
@@ -247,7 +247,7 @@ for i in range(5):
             .run()
     )
     dfs = df.snapshots
-    dfs.write_csv(f"X_{GLOBAL_SEED}.csv")
+    dfs.write_csv(f"X_sexual_{GLOBAL_SEED}.csv")
     gc.collect()
 
 
