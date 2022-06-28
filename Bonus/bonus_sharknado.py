@@ -47,7 +47,7 @@ class Hunter(Agent):
 
         self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
-        self.repr_energy = int(self.max_energy*0.70)-20
+        self.repr_energy = int(self.max_energy*0.50)-20
         self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
@@ -96,8 +96,11 @@ class Hunter(Agent):
             pos = [s[0].pos for s in self.hunters_in_visual_radius]
             vec = [s[0].move for s in self.hunters_in_visual_radius]
 
-            ad,sd,cd,rd = 1,1,0.5,1
-            c,s,a, = self.calc(pos,vec)
+            ad, sd, cd, rd = 1, 1, 1, 1
+            c, s, a, = self.calc(pos, vec)
+            if next((x for x in self.hunters_in_visual_radius if x[0].repr_cool == 0), None) and self.repr_cool == 0:
+                ad, sd, cd, rd = 0, 0, 1, 0
+
         elif len(self.prey_in_visual_radius) > 0:
             pos = [s[0].pos for s in self.prey_in_visual_radius]
             vec = [s[0].move for s in self.prey_in_visual_radius]
@@ -134,16 +137,15 @@ class Hunter(Agent):
                 self.energy = min(self.max_energy, self.energy+40)
 
 
-            if len(self.hunters_in_visual_radius) > 0 \
-                    and self.repr_cool == 0 \
+            if len(self.hunters_in_visual_radius) > 0 and self.repr_cool == 0 \
                     and self.energy >= self.repr_energy \
+                    and self.hunters_in_visual_radius[0][0].repr_cool == 0 \
                     and self.hunters_in_visual_radius[0][0].energy >= self.hunters_in_visual_radius[0][0].repr_energy:
-
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
-                self.repr_cool = random.randint(200,300)
+                self.hunters_in_visual_radius[0][0].partner = self if self.hunters_in_visual_radius[0][0].partner == None else self.hunters_in_visual_radius[0][0].partner
+                self.hunters_in_visual_radius[0][0].repr_cool = random.randint(150,200)
+                self.repr_cool = random.randint(150,200)
                 #self.change_image(int(self.gene[0] * 10) + 10)
-
-
             self.random_move()
 
 
@@ -179,6 +181,9 @@ class Prey(Agent):
 
             ad,sd,cd,rd = 0,1,0,0
             c,s,a, = self.calc(pos,vec)
+
+
+
         elif len(self.prey_in_visual_radius) > 0:
             pos = [s[0].pos for s in self.prey_in_visual_radius]
             vec = [s[0].move for s in self.prey_in_visual_radius]
