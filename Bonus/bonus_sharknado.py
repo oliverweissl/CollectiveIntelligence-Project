@@ -1,14 +1,16 @@
 import gc
 import pickle
-import numpy as np
+#import numpy as np
 
+from numpy import average, random, linalg
+from copy import copy
 from vi import Agent, Simulation, HeadlessSimulation
 from vi.config import Config, dataclass, deserialize, Window
 
 
 
 def gen_gene(): #gen random gene
-    return np.random.uniform(size = 2)
+    return random.uniform(size = 2)
 
 @deserialize
 @dataclass
@@ -25,38 +27,68 @@ class Conf(Config):
     radius: int = 30
 
 
+    visual_bounds = [10,60]
+    mass_bounds = [20,80]
+
+    alpha: float = 0.1
+
+
 class Hunter(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
-        self.id = int(f"{self.id}{''.join([str(x) for x in self.gene])}") #record gene in df
-
-        self.mass = self.config.mass*(self.gene[0]/13 +0.3) #expression of mass gene f(x) = x/13 +0.3
-        self.vision = self.config.radius*(self.gene[1]/13 +0.3) #expression of vision gene - former: visual_radius
 
 
+        self.id = int(f"{self.id}{''.join([str(int(x*10)) for x in self.gene])}") #record gene in df
 
-        #self.reach = self.vision / (self.size/30+0.3) #reach calulation - former: eating_radius
-        #self.energy = self.mass * 6 #max energy
-        #self.change_image(self.gene[2]) #change image to size
-        #self.speed = self.config.delta_time * self.strength / np.sqrt((self.mass + self.size)/10) #calcualtion of speed - WIP
+        self.mass = self.config.mass_bounds[1] * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
+        self.vision = self.config.visual_bounds[1]* self.gene[1] #expression of vision gene - former: visual_radius
 
+        self.max_energy = self.mass * 6 #max energy
+        self.energy = self.max_energy
+        self.repr_energy = int(self.max_energy*0.70)-20
 
-        self.p_reproduce = 0.15
+        self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
+        self.speed = self.gene[1]*2 + 1 #calcualtion of speed - WIP
+
+        self.change_image(int(self.gene[0]*10)-1) #change image to size
+
+        self.repr_cool = 0
+        self.partner = None
 
     def _collect_replay_data(self):
-        super()._collect_replay_data()
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(1) # 1: hunter
+        snapshots = self._Agent__simulation._metrics._temporary_snapshots
+        snapshots["frame"].append(self.shared.counter)
+        snapshots["id"].append(self.id)
+        snapshots["image_index"].append(self._image_index)
+
+        self._Agent__simulation._metrics._temporary_snapshots["type"].append(1)  # 1: hunter
 
     def calc(self,pos,vec):
-        c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
-        s = np.average([self.pos - x for x in pos], axis = 0) #seperation
-        a = np.average(vec, axis = 0) - self.move #alignment
+        c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
+        s = average([self.pos - x for x in pos], axis = 0) #seperation
+        a = average(vec, axis = 0) - self.move #alignment
         return c,s,a
 
+    def reproduce(self, other):
+        random_uniform_coef = random.uniform(-self.config.alpha, 1 + self.config.alpha)
+        child_genes = [None, None]
+
+        child_genes[0] = min(self.config.mass_bounds[0],
+                             max(self.config.mass_bounds[1],
+                                 random_uniform_coef * (other.gene[0] - self.gene[0]) + self.gene[0]))
+
+        child_genes[1] = min(self.config.visual_bounds[0],
+                             max(self.config.visual_bounds[1],
+                                 random_uniform_coef * (other.gene[1] - self.gene[1]) + self.gene[1]))
+
+        child = copy(self)
+        child.gene = child_genes
+
+
     def random_move(self):
-        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+        self.move = self.move / linalg.norm(self.move) if linalg.norm(self.move) > 0 else self.move
 
         ad,sd,cd,rd = 0,0,0,1 #activtor for a,s,c,r
         a,s,c = 0,0,0 #alignment, seperation, cohesion coefficients
@@ -76,7 +108,7 @@ class Hunter(Agent):
         f_total = (ad * self.config.alignment_weight * a +
                    sd * self.config.separation_weight * s +
                    cd * self.config.cohesion_weight * c +
-                   rd * self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.mass
+                   rd * self.config.random_weight * random.uniform(low = -1, high = 1, size = 2)) / self.mass
 
         self.move += f_total
         self.pos += self.move * self.speed
@@ -86,8 +118,11 @@ class Hunter(Agent):
         if self.energy <= 1: self.kill()
 
         if self.is_alive():
-            self.p_reproduce = 1/self.energy
-            self.energy *= 0.94
+            self.energy *= 0.96
+            self.repr_cool = max(0, self.repr_cool-1)
+            if self.repr_cool == 1:
+                self.reproduce(self.partner)
+
 
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
             _prey_temp = list(self.in_proximity_accuracy().filter_kind(Prey))
@@ -96,9 +131,13 @@ class Hunter(Agent):
 
             if len(prey_in_eating_radius) > 0:
                 prey_in_eating_radius[0][0].kill()
-                self.energy = min(300, self.energy+40)
-                if np.random.uniform() < self.p_reproduce:
-                    self.reproduce()
+                self.energy = min(self.max_energy, self.energy+40)
+
+
+            if len(self.hunters_in_visual_radius) > 0 and self.energy >= self.repr_energy:
+                self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
+                self.repr_cool = random.randint(80,90)
+
 
             self.random_move()
 
@@ -111,17 +150,21 @@ class Prey(Agent):
         self.visual_radius = self.config.radius
 
     def _collect_replay_data(self):
-        super()._collect_replay_data()
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(0) # 0: prey
+        snapshots = self._Agent__simulation._metrics._temporary_snapshots
+        snapshots["frame"].append(self.shared.counter)
+        snapshots["id"].append(self.id)
+        snapshots["image_index"].append(self._image_index)
+
+        self._Agent__simulation._metrics._temporary_snapshots["type"].append(0)  # 0: prey
 
     def calc(self,pos,vec):
-        c = (np.average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
-        s = np.average([self.pos - x for x in pos], axis = 0) #seperation
-        a = np.average(vec, axis = 0) - self.move #alignment
+        c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
+        s = average([self.pos - x for x in pos], axis = 0) #seperation
+        a = average(vec, axis = 0) - self.move #alignment
         return c,s,a
 
     def random_move(self):
-        self.move = self.move / np.linalg.norm(self.move) if np.linalg.norm(self.move) > 0 else self.move
+        self.move = self.move / linalg.norm(self.move) if linalg.norm(self.move) > 0 else self.move
 
         ad,sd,cd,rd = 0,0,0,1
         a,s,c = 0,0,0
@@ -142,7 +185,7 @@ class Prey(Agent):
         f_total = (ad * self.config.alignment_weight * a +
                    sd * self.config.separation_weight * s +
                    cd * self.config.cohesion_weight * c +
-                   rd * self.config.random_weight * np.random.uniform(low = -1, high = 1, size = 2)) / self.config.mass
+                   rd * self.config.random_weight * random.uniform(low = -1, high = 1, size = 2)) / self.config.mass
 
         self.move += f_total
         self.pos += self.move * self.config.delta_time
@@ -156,7 +199,7 @@ class Prey(Agent):
 
             prob = self.p_reproduction/(len(self.prey_in_visual_radius)) if len(self.prey_in_visual_radius) > 0 else self.p_reproduction
 
-            if np.random.uniform() < prob: self.reproduce()
+            if random.uniform() < prob: self.reproduce()
 
             self.random_move()
 
@@ -164,20 +207,16 @@ class Prey(Agent):
 class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
-        global counter_t
         super().tick(*args, **kwargs)
-        counter_t += 1
         hunter_count = len(list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__()))))
         if hunter_count == 0:
             self.stop()
 
-frame_counter = []
+
 x, y = Conf().window.as_tuple()
 birds = [f"images/bird_{x}.png" for x in range(10)] #list of all bird sprites
 for i in range(5):
-    GLOBAL_SEED = np.random.randint(0,1000000)
-
-    counter_t = 0
+    GLOBAL_SEED = random.randint(0,1000000)
     df = (
         Live(
             Conf(
@@ -190,16 +229,12 @@ for i in range(5):
                 seed=GLOBAL_SEED
             )
         )
-            .batch_spawn_agents(500, Prey, images=["images/white.png"])
+            .batch_spawn_agents(100, Prey, images=["images/white.png"])
             .batch_spawn_agents(20, Hunter, images=birds)
             .run()
     )
-
-    frame_counter.append([GLOBAL_SEED,counter_t])
     dfs = df.snapshots
     dfs.write_csv(f"X_{GLOBAL_SEED}.csv")
-    with open(f"framecount", "wb") as fp:
-        pickle.dump(frame_counter, fp)
     gc.collect()
 
 
