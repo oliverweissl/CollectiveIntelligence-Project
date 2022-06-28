@@ -8,7 +8,7 @@ from vi.config import Config, dataclass, deserialize, Window
 
 
 def gen_gene(): #gen random gene
-    return np.random.randint(0,9,4)
+    return np.random.uniform(size = 2)
 
 @deserialize
 @dataclass
@@ -34,14 +34,13 @@ class Hunter(Agent):
 
         self.mass = self.config.mass*(self.gene[0]/13 +0.3) #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.radius*(self.gene[1]/13 +0.3) #expression of vision gene - former: visual_radius
-        self.size = self.gene[2] #expression of size
-        self.strength = self.gene[3] / 13 + 0.3 #expression of strength
 
 
-        self.reach = self.vision / (self.size/30+0.3) #reach calulation - former: eating_radius
-        self.energy = self.mass * 6 #max energy
-        self.change_image(self.gene[2]) #change image to size
-        self.speed = self.config.delta_time * self.strength / np.sqrt((self.mass + self.size)/10) #calcualtion of speed - WIP
+
+        #self.reach = self.vision / (self.size/30+0.3) #reach calulation - former: eating_radius
+        #self.energy = self.mass * 6 #max energy
+        #self.change_image(self.gene[2]) #change image to size
+        #self.speed = self.config.delta_time * self.strength / np.sqrt((self.mass + self.size)/10) #calcualtion of speed - WIP
 
 
         self.p_reproduce = 0.15
