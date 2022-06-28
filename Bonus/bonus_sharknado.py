@@ -38,9 +38,9 @@ class Hunter(Agent):
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
-
-
+        self.change_image(int(self.gene[0] * 10) - 1)  # change image to size
         self.id = int(f"{self.id}{''.join([str(int(x*10)) for x in self.gene])}") #record gene in df
+
 
         self.mass = self.config.mass_bounds[1] * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.visual_bounds[1]* self.gene[1] #expression of vision gene - former: visual_radius
@@ -52,7 +52,6 @@ class Hunter(Agent):
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1 #calcualtion of speed - WIP
 
-        self.change_image(int(self.gene[0]*10)-1) #change image to size
 
         self.repr_cool = 0
         self.partner = None
@@ -75,12 +74,12 @@ class Hunter(Agent):
         random_uniform_coef = random.uniform(-self.config.alpha, 1 + self.config.alpha)
         child_genes = [None, None]
 
-        child_genes[0] = min(self.config.mass_bounds[0],
-                             max(self.config.mass_bounds[1],
+        child_genes[0] = min(self.config.mass_bounds[1],
+                             max(self.config.mass_bounds[0],
                                  random_uniform_coef * (other.gene[0] - self.gene[0]) + self.gene[0]))
 
-        child_genes[1] = min(self.config.visual_bounds[0],
-                             max(self.config.visual_bounds[1],
+        child_genes[1] = min(self.config.visual_bounds[1],
+                             max(self.config.visual_bounds[0],
                                  random_uniform_coef * (other.gene[1] - self.gene[1]) + self.gene[1]))
 
         child = copy(self)
@@ -134,7 +133,11 @@ class Hunter(Agent):
                 self.energy = min(self.max_energy, self.energy+40)
 
 
-            if len(self.hunters_in_visual_radius) > 0 and self.energy >= self.repr_energy:
+            if len(self.hunters_in_visual_radius) > 0 \
+                    and self.repr_cool == 0 \
+                    and self.energy >= self.repr_energy \
+                    and self.hunters_in_visual_radius[0][0].energy >= self.hunters_in_visual_radius[0][0].repr_energy:
+
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.repr_cool = random.randint(80,90)
 
@@ -208,8 +211,9 @@ class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
-        hunter_count = len(list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__()))))
-        if hunter_count == 0:
+        hunter = list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__())))
+        hunter_count = len(hunter)
+        if hunter_count == 0 or (hunter_count == 1 and hunter[0].repr_cool == 0):
             self.stop()
 
 
