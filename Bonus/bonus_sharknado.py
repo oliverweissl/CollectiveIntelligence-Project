@@ -27,8 +27,8 @@ class Conf(Config):
     radius: int = 30
 
 
-    visual_bounds = [10,60]
-    mass_bounds = [20,80]
+    visual_bounds = [10,70]
+    mass_bounds = [10,80]
 
     alpha: float = 0.1
 
@@ -39,11 +39,11 @@ class Hunter(Agent):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
         self.change_image(int(self.gene[0] * 10) - 1)  # change image to size
-        self.id = int(f"{self.id}{''.join([str(int(x*10)) for x in self.gene])}") #record gene in df
+        self.id = int(f"{self.id}{''.join([str(int(x*100)).zfill(3) for x in self.gene])}") #record gene in df
 
 
-        self.mass = self.config.mass_bounds[1] * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
-        self.vision = self.config.visual_bounds[1]* self.gene[1] #expression of vision gene - former: visual_radius
+        self.mass = self.config.mass_bounds[0] + 60 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
+        self.vision = self.config.visual_bounds[0] + 60 * self.gene[1] #expression of vision gene - former: visual_radius
 
         self.max_energy = self.mass * 6 #max energy
         self.energy = self.max_energy
