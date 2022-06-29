@@ -1,6 +1,4 @@
 import gc
-import pickle
-#import numpy as np
 
 from numpy import average, random, linalg, log
 from copy import copy
@@ -39,7 +37,6 @@ class Hunter(Agent):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
         self.change_image(int(self.gene[0] * 10))  # change image to size
-        self.id = int(f"{self.id}{''.join([str(int(x*100)).zfill(3) for x in self.gene])}") #record gene in df
 
         self.max_age = random.randint(900,1200)
         self.age = 0
@@ -49,7 +46,6 @@ class Hunter(Agent):
 
         self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
-        #self.repr_energy = int(self.max_energy*0.50)-20
         self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
@@ -62,10 +58,10 @@ class Hunter(Agent):
     def _collect_replay_data(self):
         snapshots = self._Agent__simulation._metrics._temporary_snapshots
         snapshots["frame"].append(self.shared.counter)
-        snapshots["id"].append(self.id)
-        snapshots["image_index"].append(self._image_index)
+        snapshots["type"].append(1)
 
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(1)  # 1: hunter
+        snapshots["mass"].append(int(self.gene[0] * 1000))  # place here the gene variables of the agent
+        snapshots["vision"].append(int(self.gene[1] * 1000))
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -157,10 +153,10 @@ class Prey(Agent):
     def _collect_replay_data(self):
         snapshots = self._Agent__simulation._metrics._temporary_snapshots
         snapshots["frame"].append(self.shared.counter)
-        snapshots["id"].append(self.id)
-        snapshots["image_index"].append(self._image_index)
+        snapshots["type"].append(0)
 
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(0)  # 0: prey
+        snapshots["mass"].append(0)  # place here the gene variables of the agent
+        snapshots["vision"].append(0)
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -212,7 +208,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
