@@ -80,7 +80,7 @@ class Hunter(Agent):
 
             child_genes[0] = min(1,max(0,random_uniform_coef_0 * (other.gene[0] - self.gene[0]) + self.gene[0]+random_noise_0))
 
-            child_genes[1] = min(1,max(0,random_uniform_coef_1 * (other.gene[1] - self.gene[1]) + self.gene[1]+random_noise_0))
+            child_genes[1] = min(1,max(0,random_uniform_coef_1 * (other.gene[1] - self.gene[1]) + self.gene[1]+random_noise_1))
 
             child = copy(self)
             child.gene = child_genes
