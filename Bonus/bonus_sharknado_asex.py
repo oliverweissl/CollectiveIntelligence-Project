@@ -39,8 +39,6 @@ class Hunter(Agent):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
         self.change_image(int(self.gene[0] * 10))  # change image to size
-        self.id = int(f"{self.id}{''.join([str(int(x*100)).zfill(3) for x in self.gene])}") #record gene in df
-
 
         self.mass = self.config.mass_bounds[0] + 60 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.visual_bounds[0] + 60 * self.gene[1] #expression of vision gene - former: visual_radius
@@ -64,10 +62,10 @@ class Hunter(Agent):
         snapshots["id"].append(self.id)
         snapshots["image_index"].append(self._image_index)
 
-        self.Agent_simulation._metrics._temporary_snapshots["mass"].append(self.gene[0])  # place here the gene variables of the agent
-        self.Agent_simulation._metrics._temporary_snapshots["vision"].append(self.gene[1])
+        snapshots["mass"].append(int(self.gene[0]*1000))  # place here the gene variables of the agent
+        snapshots["vision"].append(int(self.gene[1]*1000))
 
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(1)  # 1: hunter
+        snapshots["type"].append(1)  # 1: hunter
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -171,8 +169,10 @@ class Prey(Agent):
         snapshots["id"].append(self.id)
         snapshots["image_index"].append(self._image_index)
 
+        snapshots["mass"].append(0)  # place here the gene variables of the agent
+        snapshots["vision"].append(0)
 
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(0)  # 0: prey
+        snapshots["type"].append(0)  # 0: prey
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -221,13 +221,13 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
         hunter = list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__())))
         hunter_count = len(hunter)
-        if hunter_count == 0 or (hunter_count == 1 and hunter[0].repr_cool == 0):
+        if hunter_count == 0:
             self.stop()
 
 
