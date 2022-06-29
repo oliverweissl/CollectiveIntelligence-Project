@@ -74,19 +74,16 @@ class Hunter(Agent):
         return c,s,a
 
     def reproduce(self, other):
-        random_uniform_coef = random.uniform(-self.config.alpha, 1 + self.config.alpha)
-        child_genes = [None, None]
+        for x in range(random.randint(1,5)):
+            random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
+            child_genes = [None, None]
 
-        child_genes[0] = min(self.config.mass_bounds[1],
-                             max(self.config.mass_bounds[0],
-                                 random_uniform_coef * (other.gene[0] - self.gene[0]) + self.gene[0]))
+            child_genes[0] = min(1,max(0,random_uniform_coef * (other.gene[0] - self.gene[0]) + self.gene[0]))
 
-        child_genes[1] = min(self.config.visual_bounds[1],
-                             max(self.config.visual_bounds[0],
-                                 random_uniform_coef * (other.gene[1] - self.gene[1]) + self.gene[1]))
+            child_genes[1] = min(1,max(0,random_uniform_coef * (other.gene[1] - self.gene[1]) + self.gene[1]))
 
-        child = copy(self)
-        child.gene = child_genes
+            child = copy(self)
+            child.gene = child_genes
 
 
     def random_move(self):
@@ -215,7 +212,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
