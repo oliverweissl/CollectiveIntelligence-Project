@@ -71,12 +71,16 @@ class Hunter(Agent):
 
     def reproduce(self, other):
         for x in range(random.randint(1,5)):
-            random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
+            random_uniform_coef_0 = random.uniform(-self.config.alpha, self.config.alpha)
+            random_uniform_coef_1 = random.uniform(-self.config.alpha, self.config.alpha)
+            random_noise_0 = random.normal(0, self.config.alpha)
+            random_noise_1 = random.normal(0, self.config.alpha)
+
             child_genes = [None, None]
 
-            child_genes[0] = min(1,max(0,random_uniform_coef * (other.gene[0] - self.gene[0]) + self.gene[0]))
+            child_genes[0] = min(1,max(0,random_uniform_coef_0 * (other.gene[0] - self.gene[0]) + self.gene[0]+random_noise_0))
 
-            child_genes[1] = min(1,max(0,random_uniform_coef * (other.gene[1] - self.gene[1]) + self.gene[1]))
+            child_genes[1] = min(1,max(0,random_uniform_coef_1 * (other.gene[1] - self.gene[1]) + self.gene[1]+random_noise_0))
 
             child = copy(self)
             child.gene = child_genes
