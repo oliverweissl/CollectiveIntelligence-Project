@@ -45,15 +45,11 @@ class Hunter(Agent):
 
         self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
-        self.repr_energy = int(self.max_energy*0.70)-20
         self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1*self.gene[0] #calcualtion of speed - WIP
 
-
-        self.repr_cool = 0
-        self.partner = None
         self.p_reproduce = 0.015
 
     def _collect_replay_data(self):
@@ -77,13 +73,9 @@ class Hunter(Agent):
         random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
         child_genes = [None, None]
 
-        child_genes[0] = min(1,
-                             max(0,
-                                 random_uniform_coef + self.gene[0]))
+        child_genes[0] = min(1,max(0,random_uniform_coef + self.gene[0]))
 
-        child_genes[1] = min(1,
-                             max(0,
-                                 random_uniform_coef + self.gene[1]))
+        child_genes[1] = min(1,max(0,random_uniform_coef + self.gene[1]))
 
         child = copy(self)
         child.gene = child_genes
@@ -122,13 +114,6 @@ class Hunter(Agent):
         if self.is_alive():
             self.energy *= self.consumption
 
-            """
-            self.repr_cool = max(0, self.repr_cool-1)
-            if self.repr_cool == 1:
-                self.reproduce(self.partner)
-            """
-
-
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
             _prey_temp = list(self.in_proximity_accuracy().filter_kind(Prey))
             self.prey_in_visual_radius = list(filter(lambda x: x[-1] < self.vision, _prey_temp))
@@ -137,21 +122,8 @@ class Hunter(Agent):
             if len(prey_in_eating_radius) > 0:
                 prey_in_eating_radius[0][0].kill()
                 self.energy = min(self.max_energy, self.energy+40)
-
                 if random.uniform() < self.p_reproduce:
                     self.reproduce()
-
-            """
-            if len(self.hunters_in_visual_radius) > 0 \
-                    and self.repr_cool == 0 \
-                    and self.energy >= self.repr_energy \
-                    and self.hunters_in_visual_radius[0][0].energy >= self.hunters_in_visual_radius[0][0].repr_energy:
-
-                self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
-                self.repr_cool = random.randint(100,200)
-                #self.change_image(int(self.gene[0] * 10) + 10)
-            """
-
 
             self.random_move()
 
@@ -209,6 +181,8 @@ class Prey(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
+        if self.energy < 1:
+            self.kill()
 
         if self.is_alive():
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
@@ -221,22 +195,17 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
-        hunter = list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__())))
-        hunter_count = len(hunter)
+        hunter_count = len(list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__()))))
         if hunter_count == 0:
             self.stop()
 
 
 x, y = Conf().window.as_tuple()
 birds = [f"images/bird_{x}.png" for x in range(10)] #list of all bird sprites
-
-#if adding pregnancy image change:
-#preg_birds = [f"images/bird_{x}p.png" for x in range(10)] #list of all bird sprites]
-#birds.append(preg_birds)
 for i in range(5):
     GLOBAL_SEED = random.randint(0,1000000)
     df = (

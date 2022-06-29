@@ -31,7 +31,7 @@ class Conf(Config):
     mass_bounds = [10,80]
 
     alpha: float = 0.05
-
+    
 
 class Hunter(Agent):
     config: Conf
@@ -39,15 +39,12 @@ class Hunter(Agent):
         super().__init__(*args, **kwargs)
         self.gene = gen_gene() #get gene
         self.change_image(int(self.gene[0] * 10))  # change image to size
-        self.id = int(f"{self.id}{''.join([str(int(x*100)).zfill(3) for x in self.gene])}") #record gene in df
-
 
         self.mass = self.config.mass_bounds[0] + 60 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.visual_bounds[0] + 60 * self.gene[1] #expression of vision gene - former: visual_radius
 
         self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
-        self.repr_energy = int(self.max_energy*0.70)-20
         self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
@@ -55,8 +52,7 @@ class Hunter(Agent):
 
 
         self.repr_cool = 0
-        self.partner = None
-        self.p_reproduce = 0.0015
+        self.p_reproduce = 0.015
 
     def _collect_replay_data(self):
         snapshots = self._Agent__simulation._metrics._temporary_snapshots
@@ -64,10 +60,10 @@ class Hunter(Agent):
         snapshots["id"].append(self.id)
         snapshots["image_index"].append(self._image_index)
 
-        self.Agent_simulation._metrics._temporary_snapshots["mass"].append(self.gene[0])  # place here the gene variables of the agent
-        self.Agent_simulation._metrics._temporary_snapshots["vision"].append(self.gene[1])
+        snapshots["mass"].append(int(self.gene[0]*1000))  # place here the gene variables of the agent
+        snapshots["vision"].append(int(self.gene[1]*1000))
 
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(1)  # 1: hunter
+        snapshots["type"].append(1)  # 1: hunter
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -76,16 +72,12 @@ class Hunter(Agent):
         return c,s,a
 
     def reproduce(self):
-        random_uniform_coef = random.uniform(-self.config.alpha, 1 + self.config.alpha)
+        random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
         child_genes = [None, None]
 
-        child_genes[0] = min(self.config.mass_bounds[1],
-                             max(self.config.mass_bounds[0],
-                                 random_uniform_coef * (self.gene[0]) + self.gene[0]))
+        child_genes[0] = min(1,max(0,random_uniform_coef + self.gene[0]))
 
-        child_genes[1] = min(self.config.visual_bounds[1],
-                             max(self.config.visual_bounds[0],
-                                 random_uniform_coef * (self.gene[1]) + self.gene[1]))
+        child_genes[1] = min(1,max(0,random_uniform_coef + self.gene[1]))
 
         child = copy(self)
         child.gene = child_genes
@@ -100,7 +92,7 @@ class Hunter(Agent):
             pos = [s[0].pos for s in self.hunters_in_visual_radius]
             vec = [s[0].move for s in self.hunters_in_visual_radius]
 
-            ad,sd,cd,rd = 1,1,0.5,1
+            ad,sd,cd,rd = 1,1,1,1
             c,s,a, = self.calc(pos,vec)
         elif len(self.prey_in_visual_radius) > 0:
             pos = [s[0].pos for s in self.prey_in_visual_radius]
@@ -122,17 +114,13 @@ class Hunter(Agent):
         if self.energy <= 1: self.kill()
 
         if self.is_alive():
-            self.energy *= self.consumption
-            if self.repr_cool > 1: self.repr_cool -=1
-
-
-            """
-            self.repr_cool = max(0, self.repr_cool-1)
-            if self.repr_cool == 1:
+            if self.repr_cool > 1: self.repr_cool -= 1
+            elif self.repr_cool == 1:
                 self.reproduce()
-            """
+                self.repr_cool = 0
 
 
+            self.energy *= self.consumption
 
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
             _prey_temp = list(self.in_proximity_accuracy().filter_kind(Prey))
@@ -142,21 +130,8 @@ class Hunter(Agent):
             if len(prey_in_eating_radius) > 0:
                 prey_in_eating_radius[0][0].kill()
                 self.energy = min(self.max_energy, self.energy+40)
-                if self.repr_cool == 0 and random.uniform() < self.p_reproduce: self.repr_cool = random.randint(80,150)
-
-            if self.repr_cool == 1:
-                self.repr_cool = 0
-                self.reproduce()
-            """
-            if len(self.hunters_in_visual_radius) > 0 \
-                    and self.repr_cool == 0 \
-                    and self.energy >= self.repr_energy \
-                    and self.hunters_in_visual_radius[0][0].energy >= self.hunters_in_visual_radius[0][0].repr_energy:
-
-                self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
-                self.repr_cool = random.randint(100,200)
-                #self.change_image(int(self.gene[0] * 10) + 10)
-            """
+                if self.repr_cool == 0 and random.uniform() < self.p_reproduce:
+                    self.repr_cool = random.randint(200,300)
 
             self.random_move()
 
@@ -173,9 +148,11 @@ class Prey(Agent):
         snapshots["frame"].append(self.shared.counter)
         snapshots["id"].append(self.id)
         snapshots["image_index"].append(self._image_index)
-        
 
-        self._Agent__simulation._metrics._temporary_snapshots["type"].append(0)  # 0: prey
+        snapshots["mass"].append(0)  # place here the gene variables of the agent
+        snapshots["vision"].append(0)
+
+        snapshots["type"].append(0)  # 0: prey
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -228,18 +205,13 @@ class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
-        hunter = list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__())))
-        hunter_count = len(hunter)
-        if hunter_count == 0 or (hunter_count == 1 and hunter[0].repr_cool == 0):
+        hunter_count = len(list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__()))))
+        if hunter_count == 0:
             self.stop()
 
 
 x, y = Conf().window.as_tuple()
 birds = [f"images/bird_{x}.png" for x in range(10)] #list of all bird sprites
-
-#if adding pregnancy image change:
-#preg_birds = [f"images/bird_{x}p.png" for x in range(10)] #list of all bird sprites]
-#birds.append(preg_birds)
 for i in range(5):
     GLOBAL_SEED = random.randint(0,1000000)
     df = (
