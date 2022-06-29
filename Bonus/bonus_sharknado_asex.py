@@ -64,6 +64,9 @@ class Hunter(Agent):
         snapshots["id"].append(self.id)
         snapshots["image_index"].append(self._image_index)
 
+        self.Agent_simulation._metrics._temporary_snapshots["mass"].append(self.gene[0])  # place here the gene variables of the agent
+        self.Agent_simulation._metrics._temporary_snapshots["vision"].append(self.gene[1])
+
         self._Agent__simulation._metrics._temporary_snapshots["type"].append(1)  # 1: hunter
 
     def calc(self,pos,vec):
@@ -97,7 +100,7 @@ class Hunter(Agent):
             pos = [s[0].pos for s in self.hunters_in_visual_radius]
             vec = [s[0].move for s in self.hunters_in_visual_radius]
 
-            ad,sd,cd,rd = 1,1,0.5,1
+            ad,sd,cd,rd = 1,1,1,1
             c,s,a, = self.calc(pos,vec)
         elif len(self.prey_in_visual_radius) > 0:
             pos = [s[0].pos for s in self.prey_in_visual_radius]
@@ -167,6 +170,7 @@ class Prey(Agent):
         snapshots["frame"].append(self.shared.counter)
         snapshots["id"].append(self.id)
         snapshots["image_index"].append(self._image_index)
+
 
         self._Agent__simulation._metrics._temporary_snapshots["type"].append(0)  # 0: prey
 
