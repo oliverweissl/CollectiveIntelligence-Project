@@ -41,6 +41,8 @@ class Hunter(Agent):
         self.change_image(int(self.gene[0] * 10))  # change image to size
         self.id = int(f"{self.id}{''.join([str(int(x*100)).zfill(3) for x in self.gene])}") #record gene in df
 
+        self.max_age = random.randint(900,1200)
+        self.age = 0
 
         self.mass = self.config.mass_bounds[0] + 60 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
         self.vision = self.config.visual_bounds[0] + 60 * self.gene[1] #expression of vision gene - former: visual_radius
@@ -51,7 +53,7 @@ class Hunter(Agent):
         self.consumption = 0.97 * (0.01*(1-self.gene[0])+0.99)
 
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
-        self.speed = self.gene[1]*2 + 1*self.gene[0] #calcualtion of speed - WIP
+        self.speed = self.gene[1]*2 + 1*(1-self.gene[0]) #calcualtion of speed - WIP
 
 
         self.repr_cool = 0
@@ -118,9 +120,10 @@ class Hunter(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
-        if self.energy <= 1: self.kill()
+        if self.energy <= 1 or self.age > self.max_age: self.kill()
 
         if self.is_alive():
+            self.age += 1
             self.energy *= self.consumption
             self.repr_cool = max(0, self.repr_cool-1)
             if self.repr_cool == 1:
@@ -218,7 +221,7 @@ class Live(HeadlessSimulation):
         super().tick(*args, **kwargs)
         hunter = list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__())))
         hunter_count = len(hunter)
-        if hunter_count == 0 or (hunter_count == 1 and hunter[0].repr_cool == 0):
+        if hunter_count == 0:
             self.stop()
 
 
