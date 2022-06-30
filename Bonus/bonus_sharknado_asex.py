@@ -182,8 +182,6 @@ class Prey(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
-        if self.energy < 1:
-            self.kill()
 
         if self.is_alive():
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
