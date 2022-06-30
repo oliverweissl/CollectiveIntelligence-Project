@@ -71,11 +71,12 @@ class Hunter(Agent):
 
     def reproduce(self):
         random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
+        random_uniform_coef1 = random.uniform(-self.config.alpha, self.config.alpha)
         child_genes = [None, None]
 
         child_genes[0] = min(1,max(0,random_uniform_coef + self.gene[0]))
 
-        child_genes[1] = min(1,max(0,random_uniform_coef + self.gene[1]))
+        child_genes[1] = min(1,max(0,random_uniform_coef1 + self.gene[1]))
 
         child = copy(self)
         child.gene = child_genes
