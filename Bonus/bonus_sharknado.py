@@ -41,8 +41,8 @@ class Hunter(Agent):
         self.max_age = random.randint(900,1200)
         self.age = 0
 
-        self.mass = self.config.mass_bounds[0] + 60 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
-        self.vision = self.config.visual_bounds[0] + 60 * self.gene[1] #expression of vision gene - former: visual_radius
+        self.mass = self.config.mass_bounds[0] + 70 * self.gene[0] #expression of mass gene f(x) = x/13 +0.3
+        self.vision = self.config.visual_bounds[0] + 50 * self.gene[1] #expression of vision gene - former: visual_radius
 
         self.max_energy = self.mass ** log(self.mass/2)+200 #max energy
         self.energy = self.max_energy
@@ -51,7 +51,8 @@ class Hunter(Agent):
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1*(1-self.gene[0]) #calcualtion of speed - WIP
 
-
+        self.repr_age = random.randint(100,300)
+        self.p_reproduce = 0.5
         self.repr_cool = 0
         self.partner = None
 
@@ -70,11 +71,11 @@ class Hunter(Agent):
         return c,s,a
 
     def reproduce(self, other):
-        for x in range(random.randint(2,6)):
+        for x in range(random.choice(6,1,p=[0,0.35,0.35,0.15,0.1,0.05])[0]):
             random_uniform_coef_0 = random.normal(0, self.config.alpha)
             random_uniform_coef_1 = random.normal(0, self.config.alpha)
-            random_noise_0 = random.normal(0, self.config.alpha)
-            random_noise_1 = random.normal(0, self.config.alpha)
+            random_noise_0 = random.normal(0, self.config.alpha/5)
+            random_noise_1 = random.normal(0, self.config.alpha/5)
 
             child_genes = [None, None]
 
@@ -99,7 +100,9 @@ class Hunter(Agent):
 
             ad, sd, cd, rd = 1, 1, 1, 1
             c, s, a, = self.calc(pos, vec)
-            if next((x for x in self.hunters_in_visual_radius if x[0].repr_cool == 0), None) and self.repr_cool == 0:
+            if self.age < self.repr_age:
+                ad, sd, cd, rd = 0, 1, 0, 0
+            elif next((x for x in self.hunters_in_visual_radius if x[0].repr_cool == 0), None) and self.repr_cool == 0:
                 ad, sd, cd, rd = 0, 0, 1, 0
 
         elif len(self.prey_in_visual_radius) > 0:
@@ -141,13 +144,16 @@ class Hunter(Agent):
 
 
             if len(self.hunters_in_visual_radius) > 0 and self.repr_cool == 0 \
-                    and self.hunters_in_visual_radius[0][0].repr_cool == 0 and self.age > 200 and self.hunters_in_visual_radius[0][0].age > 200:
-                self.change_image(int(self.gene[0] * 10) + 9)
+                    and random.uniform() > self.p_reproduce \
+                    and self.hunters_in_visual_radius[0][0].repr_cool == 0 \
+                    and self.age > self.repr_age \
+                    and self.hunters_in_visual_radius[0][0].age > self.hunters_in_visual_radius[0][0].repr_age:
+                #self.change_image(int(self.gene[0] * 10) + 9)
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.hunters_in_visual_radius[0][0].partner = self if self.hunters_in_visual_radius[0][0].partner == None else self.hunters_in_visual_radius[0][0].partner
                 #self.hunters_in_visual_radius[0][0].repr_cool = random.randint(200,400)
                 self.repr_cool = random.randint(150,300)
-                #self.change_image(int(self.gene[0] * 10) + 10)
+                self.change_image(int(self.gene[0] * 10) + 8)
             self.random_move()
 
 
@@ -181,7 +187,7 @@ class Prey(Agent):
             pos = [s[0].pos for s in self.hunters_in_visual_radius]
             vec = [s[0].move for s in self.hunters_in_visual_radius]
 
-            ad,sd,cd,rd = 0,1,0,0
+            ad,sd,cd,rd = 0,0.8,0,0
             c,s,a, = self.calc(pos,vec)
 
 
