@@ -51,8 +51,8 @@ class Hunter(Agent):
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1*(1-self.gene[0]) #calcualtion of speed - WIP
 
-        self.repr_age = random.randint(100,300)
-        self.p_reproduce = 0.5
+        self.repr_age = random.randint(10,50)
+        self.p_reproduce = 0.2
         self.repr_cool = 0
         self.partner = None
 
@@ -71,7 +71,7 @@ class Hunter(Agent):
         return c,s,a
 
     def reproduce(self, other):
-        for x in range(random.choice(6,1,p=[0,0.35,0.35,0.15,0.1,0.05])[0]):
+        for x in range(random.choice(6,1,p=[0,0.4,0.3,0.15,0.1,0.05])[0]):
             random_uniform_coef_0 = random.normal(0, self.config.alpha)
             random_uniform_coef_1 = random.normal(0, self.config.alpha)
             random_noise_0 = random.normal(0, self.config.alpha/5)
@@ -152,7 +152,7 @@ class Hunter(Agent):
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.hunters_in_visual_radius[0][0].partner = self if self.hunters_in_visual_radius[0][0].partner == None else self.hunters_in_visual_radius[0][0].partner
                 #self.hunters_in_visual_radius[0][0].repr_cool = random.randint(200,400)
-                self.repr_cool = random.randint(150,300)
+                self.repr_cool = random.randint(300,600)
                 self.change_image(int(self.gene[0] * 10) + 8)
             self.random_move()
 
@@ -222,7 +222,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
