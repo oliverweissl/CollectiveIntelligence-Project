@@ -25,7 +25,7 @@ class Conf(Config):
     radius: int = 30
 
 
-    visual_bounds = [20,70]
+    visual_bounds = [30,70]
     mass_bounds = [10,80]
 
     alpha: float = 0.1
@@ -51,8 +51,8 @@ class Hunter(Agent):
         self.reach = self.vision / 1.8 #reach calulation - former: eating_radius
         self.speed = self.gene[1]*2 + 1*(1-self.gene[0]) #calcualtion of speed - WIP
 
-        self.repr_age = random.randint(10,50)
-        self.p_reproduce = 0.2
+        self.repr_age = 200#random.randint(100,50)
+        self.p_reproduce = 0.3
         self.repr_cool = 0
         self.partner = None
 
@@ -71,7 +71,7 @@ class Hunter(Agent):
         return c,s,a
 
     def reproduce(self, other):
-        for x in range(random.choice(6,1,p=[0,0.4,0.3,0.15,0.1,0.05])[0]):
+        for x in range(max(int(self.energy/30) , 1)):#range(random.choice(6,1,p=[0,0.3,0.4,0.15,0.1,0.05])[0]):
             random_uniform_coef_0 = random.normal(0, self.config.alpha)
             random_uniform_coef_1 = random.normal(0, self.config.alpha)
             random_noise_0 = random.normal(0, self.config.alpha/5)
@@ -144,7 +144,7 @@ class Hunter(Agent):
 
 
             if len(self.hunters_in_visual_radius) > 0 and self.repr_cool == 0 \
-                    and random.uniform() > self.p_reproduce \
+                    and random.uniform() < self.p_reproduce \
                     and self.hunters_in_visual_radius[0][0].repr_cool == 0 \
                     and self.age > self.repr_age \
                     and self.hunters_in_visual_radius[0][0].age > self.hunters_in_visual_radius[0][0].repr_age:
@@ -152,7 +152,7 @@ class Hunter(Agent):
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.hunters_in_visual_radius[0][0].partner = self if self.hunters_in_visual_radius[0][0].partner == None else self.hunters_in_visual_radius[0][0].partner
                 #self.hunters_in_visual_radius[0][0].repr_cool = random.randint(200,400)
-                self.repr_cool = random.randint(300,600)
+                self.repr_cool = random.randint(150,300)
                 self.change_image(int(self.gene[0] * 10) + 8)
             self.random_move()
 
@@ -161,7 +161,7 @@ class Prey(Agent):
     config: Conf
     def __init__(self,  *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.p_reproduction = 0.008
+        self.p_reproduction = 0.03
         self.visual_radius = self.config.radius
 
     def _collect_replay_data(self):
@@ -214,7 +214,6 @@ class Prey(Agent):
         if self.is_alive():
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
             self.prey_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Prey))
-
             prob = self.p_reproduction/(len(self.prey_in_visual_radius)) if len(self.prey_in_visual_radius) > 0 else self.p_reproduction
 
             if random.uniform() < prob: self.reproduce()
@@ -222,13 +221,13 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
         hunter = list(filter(lambda x: isinstance(x, Hunter), list(self._agents.__iter__())))
         hunter_count = len(hunter)
-        if hunter_count == 0:
+        if hunter_count == 0 or (hunter_count == 1 and hunter[0].repr_cool == 0):
             self.stop()
 
 
