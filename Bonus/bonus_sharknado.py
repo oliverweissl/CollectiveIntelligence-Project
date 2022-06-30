@@ -70,13 +70,19 @@ class Hunter(Agent):
         return c,s,a
 
     def reproduce(self, other):
-        for x in range(random.randint(1,5)):
-            random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
+        for x in range(random.randint(2,6)):
+            random_uniform_coef_0 = random.normal(0, self.config.alpha)
+            random_uniform_coef_1 = random.normal(0, self.config.alpha)
+            random_noise_0 = random.normal(0, self.config.alpha)
+            random_noise_1 = random.normal(0, self.config.alpha)
+
             child_genes = [None, None]
 
-            child_genes[0] = min(1,max(0,random_uniform_coef * (other.gene[0] - self.gene[0]) + self.gene[0]))
+            child_genes[0] = min(1, max(0, random_uniform_coef_0 * (other.gene[0] - self.gene[0]) + self.gene[
+                0] + random_noise_0))
 
-            child_genes[1] = min(1,max(0,random_uniform_coef * (other.gene[1] - self.gene[1]) + self.gene[1]))
+            child_genes[1] = min(1, max(0, random_uniform_coef_1 * (other.gene[1] - self.gene[1]) + self.gene[
+                1] + random_noise_1))
 
             child = copy(self)
             child.gene = child_genes
@@ -120,6 +126,7 @@ class Hunter(Agent):
             self.energy *= self.consumption
             self.repr_cool = max(0, self.repr_cool-1)
             if self.repr_cool == 1:
+                self.change_image(int(self.gene[0] * 10) - 1)
                 self.reproduce(self.partner)
 
 
@@ -134,11 +141,12 @@ class Hunter(Agent):
 
 
             if len(self.hunters_in_visual_radius) > 0 and self.repr_cool == 0 \
-                    and self.hunters_in_visual_radius[0][0].repr_cool == 0:
+                    and self.hunters_in_visual_radius[0][0].repr_cool == 0 and self.age > 200 and self.hunters_in_visual_radius[0][0].age > 200:
+                self.change_image(int(self.gene[0] * 10) + 9)
                 self.partner = self.hunters_in_visual_radius[0][0] if self.partner == None else self.partner
                 self.hunters_in_visual_radius[0][0].partner = self if self.hunters_in_visual_radius[0][0].partner == None else self.hunters_in_visual_radius[0][0].partner
-                self.hunters_in_visual_radius[0][0].repr_cool = random.randint(500,800)
-                self.repr_cool = random.randint(500,800)
+                #self.hunters_in_visual_radius[0][0].repr_cool = random.randint(200,400)
+                self.repr_cool = random.randint(150,300)
                 #self.change_image(int(self.gene[0] * 10) + 10)
             self.random_move()
 
@@ -208,7 +216,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(HeadlessSimulation):
+class Live(Simulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
@@ -219,7 +227,8 @@ class Live(HeadlessSimulation):
 
 
 x, y = Conf().window.as_tuple()
-birds = [f"images/bird_{x}.png" for x in range(10)] #list of all bird sprites
+birds = [f"images/bird_{x}.png" for x in range(20)]
+#green_birds = [f"images/bird_green_{x}.png" for x in range(10)] #list of all bird sprites
 
 #if adding pregnancy image change:
 #preg_birds = [f"images/bird_{x}p.png" for x in range(10)] #list of all bird sprites]

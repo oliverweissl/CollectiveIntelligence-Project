@@ -55,13 +55,11 @@ class Hunter(Agent):
     def _collect_replay_data(self):
         snapshots = self._Agent__simulation._metrics._temporary_snapshots
         snapshots["frame"].append(self.shared.counter)
-        snapshots["id"].append(self.id)
-        snapshots["image_index"].append(self._image_index)
+        snapshots["type"].append(1)  # 1: hunter
 
         snapshots["mass"].append(int(self.gene[0]*1000))  # place here the gene variables of the agent
         snapshots["vision"].append(int(self.gene[1]*1000))
 
-        snapshots["type"].append(1)  # 1: hunter
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -71,11 +69,12 @@ class Hunter(Agent):
 
     def reproduce(self):
         random_uniform_coef = random.uniform(-self.config.alpha, self.config.alpha)
+        random_uniform_coef_oliver_says_this_is_necessary = random.uniform(-self.config.alpha, self.config.alpha)
         child_genes = [None, None]
 
         child_genes[0] = min(1,max(0,random_uniform_coef + self.gene[0]))
 
-        child_genes[1] = min(1,max(0,random_uniform_coef + self.gene[1]))
+        child_genes[1] = min(1,max(0,random_uniform_coef_oliver_says_this_is_necessary + self.gene[1]))
 
         child = copy(self)
         child.gene = child_genes
@@ -138,13 +137,10 @@ class Prey(Agent):
     def _collect_replay_data(self):
         snapshots = self._Agent__simulation._metrics._temporary_snapshots
         snapshots["frame"].append(self.shared.counter)
-        snapshots["id"].append(self.id)
-        snapshots["image_index"].append(self._image_index)
-
+        snapshots["type"].append(0)  # 0: prey
         snapshots["mass"].append(0)  # place here the gene variables of the agent
         snapshots["vision"].append(0)
 
-        snapshots["type"].append(0)  # 0: prey
 
     def calc(self,pos,vec):
         c = (average(pos,axis = 0) - self.pos) - self.move #fc - vel --> coheison
@@ -181,8 +177,6 @@ class Prey(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
-        if self.energy < 1:
-            self.kill()
 
         if self.is_alive():
             self.hunters_in_visual_radius = list(self.in_proximity_accuracy().filter_kind(Hunter))
@@ -195,7 +189,7 @@ class Prey(Agent):
             self.random_move()
 
 
-class Live(Simulation):
+class Live(HeadlessSimulation):
     config: Conf
     def tick(self, *args, **kwargs):
         super().tick(*args, **kwargs)
@@ -206,7 +200,7 @@ class Live(Simulation):
 
 x, y = Conf().window.as_tuple()
 birds = [f"images/bird_{x}.png" for x in range(10)] #list of all bird sprites
-for i in range(5):
+for i in range(4):
     GLOBAL_SEED = random.randint(0,1000000)
     df = (
         Live(
